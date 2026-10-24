@@ -3,7 +3,9 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>CartPole 回放 · 训练前 vs 训练后</title>
+<title>CartPole 训练回放 · MicroDuck Tutor</title>
+<link rel="stylesheet" href="../css/site.css" />
+<script src="../js/site.js" defer></script>
 <style>
   :root {
     --ink: #16202b;
@@ -16,11 +18,11 @@
   * { box-sizing: border-box; }
   body {
     margin: 0;
-    padding: 28px;
     background: #eef1f5;
     color: var(--ink);
     font-family: -apple-system, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
   }
+  .player-main { max-width: 1200px; margin: 0 auto; padding: 28px; }
   h1 { font-size: 17px; font-weight: 650; margin: 0 0 4px; }
   .sub { font-size: 12px; color: var(--ink-faint); margin: 0 0 18px; }
   .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
@@ -46,8 +48,9 @@
   @media (max-width: 760px) { .grid { grid-template-columns: 1fr; } }
 </style>
 </head>
-<body>
+<body data-site-root="../" data-site-page="tools">
 
+<main class="player-main">
 <h1>CartPole 回放：训练前 vs 训练后</h1>
 <p class="sub">同一张网络结构，同一套物理，唯一差别是权重有没有经过 REINFORCE 训练。</p>
 
@@ -71,6 +74,7 @@
   注意右边不是"算出来"的平衡，它是把 4 个数字（车位置、车速、杆角度、角速度）丢进网络，
   网络输出"该往左还是往右"，全凭试出来的权重。
 </p>
+</main>
 
 <script>
 const tracks = { a: null, b: null };

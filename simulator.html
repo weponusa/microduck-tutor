@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>MicroDuck 模拟器 · 开源双足桌面机器人</title>
+<link rel="stylesheet" href="./css/style.css" />
+<link rel="stylesheet" href="./css/site.css" />
+<script src="./js/site.js" defer></script>
+<script type="importmap">
+{
+  "imports": {
+    "three": "./vendor/three/three.module.js",
+    "three/addons/": "./vendor/three/addons/"
+  }
+}
+</script>
+</head>
+<body data-site-root="./" data-site-page="simulator">
+
+<header class="topbar">
+  <div class="brand">
+    <div class="brand-mark">M</div>
+    <div class="brand-text">
+      <h1>MicroDuck 模拟器</h1>
+      <p>Pollen Robotics 开源双足桌面机器人 · MuJoCo 物理引擎跑在浏览器里</p>
+    </div>
+  </div>
+  <div class="statusbar" id="statusbar">
+    <span class="pill"><b id="engine-version">—</b> MuJoCo</span>
+    <span class="pill">步长 <b id="timestep">—</b></span>
+    <span class="pill">自由度 <b id="dof">—</b></span>
+    <span class="pill">FPS <b id="fps">—</b></span>
+  </div>
+</header>
+
+<main class="layout">
+
+  <section class="stage" id="stage">
+    <canvas id="view"></canvas>
+
+    <div class="stage-hint">
+      <kbd>拖拽</kbd> 旋转视角 · <kbd>滚轮</kbd> 缩放 · <kbd>直接拖机器人</kbd> 施加外力
+    </div>
+
+    <div class="tilt-hint" id="tilt-hint" hidden>
+      静态位置控制撑不住这个姿态（真机靠强化学习控制器平衡）· 把「舵机刚度」拉到 8× 或开悬吊
+    </div>
+
+    <div class="toolbar">
+      <button id="btn-play" class="btn primary" title="空格键切换">暂停</button>
+      <button id="btn-step" class="btn" title="前进 10 个物理步">单步</button>
+      <button id="btn-reset" class="btn">重置</button>
+      <span class="divider"></span>
+      <div class="speeds" role="group" aria-label="仿真速度">
+        <button class="chip" data-speed="0.25">0.25×</button>
+        <button class="chip active" data-speed="1">1×</button>
+        <button class="chip" data-speed="2">2×</button>
+      </div>
+      <span class="divider"></span>
+      <button id="btn-collision" class="btn toggle">碰撞体</button>
+      <button id="btn-camera" class="btn">视角复位</button>
+      <button id="btn-poke" class="btn">推一下</button>
+    </div>
+
+    <div class="loading" id="loading">
+      <div class="loading-box">
+        <div class="spinner"></div>
+        <div class="loading-title" id="loading-title">启动 MuJoCo 引擎…</div>
+        <div class="loading-bar"><i id="loading-fill"></i></div>
+        <div class="loading-note">模型与引擎全部本地加载，不会上传任何数据</div>
+      </div>
+    </div>
+  </section>
+
+  <aside class="panel">
+    <section class="card">
+      <div class="card-head">
+        <h2>场景</h2>
+        <button id="btn-reload" class="link" hidden>重新载入</button>
+      </div>
+      <select id="scene-select" class="select" disabled>
+        <option value="scene.xml">站立 · 地面接触（scene）</option>
+        <option value="scene_walk.xml">行走模型 · 仅自碰撞（scene_walk）</option>
+        <option value="scene_rollers.xml">滚轮脚（scene_rollers）</option>
+      </select>
+    </section>
+
+    <section class="card">
+      <div class="card-head"><h2>姿态预设</h2></div>
+      <div class="pose-row" id="pose-row"></div>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <h2>仿真参数</h2>
+        <span class="hint-inline">改的是模型本体参数</span>
+      </div>
+
+      <div class="param">
+        <div class="param-head">
+          <label for="kp-scale">舵机刚度 kp</label>
+          <span class="value" id="kp-value">1.0×</span>
+        </div>
+        <input id="kp-scale" type="range" min="0.2" max="8" step="0.1" value="1" />
+        <p class="card-note" id="kp-note">1× 是官方辨识的真机参数（kp≈0.55 N·m/rad），拉高只是让静态站立成立。</p>
+      </div>
+
+      <button id="btn-suspend" class="btn wide">悬吊模式：关</button>
+      <p class="card-note">悬吊把躯干钉在空中，方便单独拨关节；关掉就是真实落地。</p>
+    </section>
+
+    <section class="card grow">
+      <div class="card-head">
+        <h2>关节控制</h2>
+        <span class="hint-inline">拖动滑块 = 给舵机下达目标角</span>
+      </div>
+      <div id="joint-controls" class="joints"></div>
+    </section>
+
+    <section class="card">
+      <div class="card-head"><h2>状态</h2></div>
+      <dl class="telemetry" id="telemetry">
+        <div><dt>离地高度</dt><dd id="t-height">—</dd></div>
+        <div><dt>俯仰 / 横滚</dt><dd id="t-tilt">—</dd></div>
+        <div><dt>接触点</dt><dd id="t-contact">—</dd></div>
+        <div><dt>仿真时间</dt><dd id="t-time">—</dd></div>
+      </dl>
+    </section>
+  </aside>
+
+</main>
+
+<script type="module" src="./js/app.js"></script>
+</body>
+</html>

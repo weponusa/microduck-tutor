@@ -3,7 +3,9 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Q-learning 单步调试器 · 看着代码一步一步学会走路</title>
+<title>Q-learning 单步调试器 · MicroDuck Tutor</title>
+<link rel="stylesheet" href="../css/site.css" />
+<script src="../js/site.js" defer></script>
 <style>
   :root {
     --ink: #16202b;
@@ -26,7 +28,7 @@
     font-family: -apple-system, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
     -webkit-font-smoothing: antialiased;
   }
-  header {
+  .tool-header {
     padding: 16px 22px 14px;
     background: var(--card);
     border-bottom: 1px solid var(--line);
@@ -36,10 +38,10 @@
     gap: 16px;
     flex-wrap: wrap;
   }
-  header h1 { margin: 0; font-size: 16px; font-weight: 650; }
-  header p { margin: 3px 0 0; font-size: 12px; color: var(--ink-faint); }
-  header a { font-size: 12px; color: var(--accent); text-decoration: none; }
-  header a:hover { text-decoration: underline; }
+  .tool-header h1 { margin: 0; font-size: 16px; font-weight: 650; }
+  .tool-header p { margin: 3px 0 0; font-size: 12px; color: var(--ink-faint); }
+  .tool-header a { font-size: 12px; color: var(--accent); text-decoration: none; }
+  .tool-header a:hover { text-decoration: underline; }
 
   main {
     max-width: 1280px;
@@ -222,14 +224,14 @@
   }
 </style>
 </head>
-<body>
+<body data-site-root="../" data-site-page="tools">
 
-<header>
+<header class="tool-header">
   <div>
     <h1>Q-learning 单步调试器</h1>
     <p>点一下走一步 —— 左边是格子里的鸭子，右边是它正在执行的代码，中间那张 Q 表正在被一个字一个字地改写</p>
   </div>
-  <a href="./README.md">← 回到五课材料</a>
+  <a href="./course.html">← 返回八关课程</a>
 </header>
 
 <main>

@@ -8,9 +8,9 @@
 
 无需安装，直接用浏览器打开：
 
-- **网站封面：<https://weponusa.github.io/microduck-tutor/cover.html>**
+- **网站首页：<https://weponusa.github.io/microduck-tutor/>**
 - **八关互动课程：<https://weponusa.github.io/microduck-tutor/rl-lab/course.html>**
-- **3D 物理模拟器：<https://weponusa.github.io/microduck-tutor/>**
+- **3D 物理模拟器：<https://weponusa.github.io/microduck-tutor/simulator.html>**
 
 建议使用最新版 Chrome、Edge 或 Safari。首次打开需要下载模型与 WASM，之后的课程计算和策略推理都在浏览器本地完成，不需要在线 API。
 
@@ -21,7 +21,7 @@
 ./run.sh 8080       # 也可以换端口
 ```
 
-本地开发时打开 <http://127.0.0.1:5173/cover.html>。必须通过 HTTP 访问，不能直接双击 HTML（浏览器的 ES module 与 WASM 安全限制）。全部静态资源随仓库提供，不需要 CDN。
+本地开发时打开 <http://127.0.0.1:5173/>。必须通过 HTTP 访问，不能直接双击 HTML（浏览器的 ES module 与 WASM 安全限制）。全部静态资源随仓库提供，不需要 CDN。
 
 ## 八关学习路线
 
@@ -42,8 +42,9 @@
 
 | 入口 | 内容 |
 | --- | --- |
-| `cover.html` | 整站封面与学习路线 |
-| `index.html` | MuJoCo + three.js 物理模拟器 |
+| `index.html` | 整站首页与学习路线 |
+| `simulator.html` | MuJoCo + three.js 物理模拟器 |
+| `cover.html` | 旧封面地址的兼容跳转 |
 | `rl-lab/course.html` | 八关互动课程 |
 | `rl-lab/start-here.html` | 零基础文字读本与自测 |
 | `rl-lab/stepper.html` | Q-learning 单步调试器 |
