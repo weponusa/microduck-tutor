@@ -1,0 +1,254 @@
+[
+ {
+  "name": "left_hip_yaw",
+  "axis": [
+   0.0,
+   0.0,
+   1.0
+  ],
+  "pos": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "body": "yaw2roll",
+  "range": [
+   -25.0,
+   30.0
+  ]
+ },
+ {
+  "name": "left_hip_roll",
+  "axis": [
+   0.0,
+   0.0,
+   1.0
+  ],
+  "pos": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "body": "hip_l",
+  "range": [
+   -22.0,
+   22.0
+  ]
+ },
+ {
+  "name": "left_hip_pitch",
+  "axis": [
+   0.0,
+   0.0,
+   1.0
+  ],
+  "pos": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "body": "upper_leg_left",
+  "range": [
+   -90.0,
+   90.0
+  ]
+ },
+ {
+  "name": "left_knee",
+  "axis": [
+   0.0,
+   0.0,
+   1.0
+  ],
+  "pos": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "body": "leg",
+  "range": [
+   -90.0,
+   90.0
+  ]
+ },
+ {
+  "name": "left_ankle",
+  "axis": [
+   0.0,
+   0.0,
+   1.0
+  ],
+  "pos": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "body": "ankle_left",
+  "range": [
+   -90.0,
+   90.0
+  ]
+ },
+ {
+  "name": "neck_pitch",
+  "axis": [
+   0.0,
+   0.0,
+   1.0
+  ],
+  "pos": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "body": "neck",
+  "range": [
+   -90.0,
+   60.0
+  ]
+ },
+ {
+  "name": "head_pitch",
+  "axis": [
+   0.0,
+   0.0,
+   1.0
+  ],
+  "pos": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "body": "neck_pitch",
+  "range": [
+   -90.0,
+   90.0
+  ]
+ },
+ {
+  "name": "head_yaw",
+  "axis": [
+   0.0,
+   0.0,
+   1.0
+  ],
+  "pos": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "body": "yaw_roll_motion",
+  "range": [
+   -170.0,
+   170.0
+  ]
+ },
+ {
+  "name": "head_roll",
+  "axis": [
+   0.0,
+   0.0,
+   1.0
+  ],
+  "pos": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "body": "jaw_soft",
+  "range": [
+   -25.0,
+   25.0
+  ]
+ },
+ {
+  "name": "right_hip_yaw",
+  "axis": [
+   0.0,
+   0.0,
+   1.0
+  ],
+  "pos": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "body": "bearing_roll",
+  "range": [
+   -30.0,
+   25.0
+  ]
+ },
+ {
+  "name": "right_hip_roll",
+  "axis": [
+   0.0,
+   0.0,
+   1.0
+  ],
+  "pos": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "body": "hip_l_2",
+  "range": [
+   -22.0,
+   22.0
+  ]
+ },
+ {
+  "name": "right_hip_pitch",
+  "axis": [
+   0.0,
+   0.0,
+   1.0
+  ],
+  "pos": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "body": "upper_leg_right",
+  "range": [
+   -90.0,
+   90.0
+  ]
+ },
+ {
+  "name": "right_knee",
+  "axis": [
+   0.0,
+   0.0,
+   1.0
+  ],
+  "pos": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "body": "leg_2",
+  "range": [
+   -90.0,
+   90.0
+  ]
+ },
+ {
+  "name": "right_ankle",
+  "axis": [
+   0.0,
+   0.0,
+   1.0
+  ],
+  "pos": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "body": "ankle_right",
+  "range": [
+   -90.0,
+   90.0
+  ]
+ }
+]

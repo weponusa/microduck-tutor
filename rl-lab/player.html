@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CartPole 回放 · 训练前 vs 训练后</title>
+<style>
+  :root {
+    --ink: #16202b;
+    --ink-soft: #5a6774;
+    --ink-faint: #8a94a0;
+    --line: #e2e6ec;
+    --card: #fff;
+    --accent: #e08a1e;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 28px;
+    background: #eef1f5;
+    color: var(--ink);
+    font-family: -apple-system, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  }
+  h1 { font-size: 17px; font-weight: 650; margin: 0 0 4px; }
+  .sub { font-size: 12px; color: var(--ink-faint); margin: 0 0 18px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .panel {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 14px;
+  }
+  .panel h2 { margin: 0; font-size: 13px; font-weight: 650; }
+  .panel .meta { margin: 3px 0 10px; font-size: 11px; color: var(--ink-faint); font-family: "SF Mono", Menlo, monospace; }
+  canvas { width: 100%; height: 210px; display: block; }
+  .panel.done { border-color: #f0c98a; box-shadow: 0 0 0 3px rgba(240, 201, 138, 0.22); }
+  .bar {
+    margin-top: 10px;
+    height: 4px;
+    border-radius: 3px;
+    background: #f0f2f5;
+    overflow: hidden;
+  }
+  .bar i { display: block; height: 100%; width: 0; background: var(--accent); }
+  .foot { margin-top: 16px; font-size: 11.5px; line-height: 1.7; color: var(--ink-soft); }
+  @media (max-width: 760px) { .grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<h1>CartPole 回放：训练前 vs 训练后</h1>
+<p class="sub">同一张网络结构，同一套物理，唯一差别是权重有没有经过 REINFORCE 训练。</p>
+
+<div class="grid">
+  <section class="panel" id="panel-a">
+    <h2>训练前</h2>
+    <p class="meta" id="meta-a">载入中…</p>
+    <canvas id="cv-a"></canvas>
+    <div class="bar"><i id="bar-a"></i></div>
+  </section>
+  <section class="panel" id="panel-b">
+    <h2>训练后</h2>
+    <p class="meta" id="meta-b">载入中…</p>
+    <canvas id="cv-b"></canvas>
+    <div class="bar"><i id="bar-b"></i></div>
+  </section>
+</div>
+
+<p class="foot">
+  左边这局通常撑不过 20 步，杆子一歪就倒；右边能一直推下去。
+  注意右边不是"算出来"的平衡，它是把 4 个数字（车位置、车速、杆角度、角速度）丢进网络，
+  网络输出"该往左还是往右"，全凭试出来的权重。
+</p>
+
+<script>
+const tracks = { a: null, b: null };
+const state = {
+  a: { frames: [], i: 0, pause: 0 },
+  b: { frames: [], i: 0, pause: 0 },
+};
+
+function setupCanvas(cv) {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const w = cv.clientWidth, h = cv.clientHeight;
+  cv.width = w * dpr;
+  cv.height = h * dpr;
+  const ctx = cv.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return { ctx, w, h };
+}
+
+function draw(cv, frame, alive) {
+  const { ctx, w, h } = setupCanvas(cv);
+  ctx.clearRect(0, 0, w, h);
+
+  const cx = w / 2, groundY = h - 34;
+  const scaleX = w / 6.2;          // 视野 ±3.1 米
+  const cartW = 46, cartH = 22;
+
+  // 地面
+  ctx.strokeStyle = '#e2e6ec';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(0, groundY);
+  ctx.lineTo(w, groundY);
+  ctx.stroke();
+
+  // 中央刻度
+  ctx.strokeStyle = '#eef1f5';
+  ctx.beginPath();
+  ctx.moveTo(cx, groundY - 8);
+  ctx.lineTo(cx, groundY + 6);
+  ctx.stroke();
+
+  if (!frame) {
+    ctx.fillStyle = '#8a94a0';
+    ctx.font = '12px -apple-system, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('等待数据…', cx, groundY - 60);
+    return;
+  }
+
+  const [x, theta] = frame;
+  const cartX = cx + x * scaleX;
+
+  // 小车
+  ctx.fillStyle = alive ? '#dfe3e8' : '#f3d9d6';
+  ctx.strokeStyle = alive ? '#b9c1cb' : '#d9a39d';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.roundRect(cartX - cartW / 2, groundY - cartH, cartW, cartH, 5);
+  ctx.fill();
+  ctx.stroke();
+
+  // 轮子
+  ctx.fillStyle = '#8a94a0';
+  [-12, 12].forEach((dx) => {
+    ctx.beginPath();
+    ctx.arc(cartX + dx, groundY - 1, 3.6, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  // 杆子：theta=0 时竖直向上，正角度朝右倒
+  const L = 120;
+  const dx = Math.sin(theta) * L;
+  const dy = Math.cos(theta) * L;
+  ctx.strokeStyle = alive ? '#e08a1e' : '#c25c4f';
+  ctx.lineWidth = 7;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(cartX, groundY - cartH);
+  ctx.lineTo(cartX + dx, groundY - cartH - dy);
+  ctx.stroke();
+
+  // 杆顶配重
+  ctx.fillStyle = alive ? '#e08a1e' : '#c25c4f';
+  ctx.beginPath();
+  ctx.arc(cartX + dx, groundY - cartH - dy, 6, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function render(key) {
+  const s = state[key];
+  const cv = document.getElementById('cv-' + key);
+  const frame = s.frames[s.i];
+  draw(cv, frame, s.i < s.frames.length - 1 || s.frames.length === 0);
+  document.getElementById('bar-' + key).style.width =
+    (s.frames.length ? (Math.min(s.i, s.frames.length) / s.frames.length) * 100 : 0) + '%';
+  if (s.i >= s.frames.length - 1) {
+    document.getElementById('panel-' + key).classList.add('done');
+  }
+}
+
+function load(key, url) {
+  fetch(url)
+    .then((r) => r.json())
+    .then((data) => {
+      state[key].frames = data.frames;
+      document.getElementById('meta-' + key).textContent =
+        `${data.frames.length} 步 · 20 回合平均 ${Math.round(data.avg)} 步`;
+      render(key);
+    })
+    .catch(() => {
+      document.getElementById('meta-' + key).textContent = '缺少 ' + url + '（先跑 02_cartpole_pg.py）';
+    });
+}
+
+function loop() {
+  for (const key of ['a', 'b']) {
+    const s = state[key];
+    if (!s.frames.length) continue;
+    if (s.i < s.frames.length - 1) {
+      s.i += 1;
+    } else {
+      s.pause += 1;
+      if (s.pause > 45) {          // 停留约 0.75 秒再重播
+        s.i = 0;
+        s.pause = 0;
+        document.getElementById('panel-' + key).classList.remove('done');
+      }
+    }
+    render(key);
+  }
+  setTimeout(loop, 16);
+}
+
+load('a', './runs/cartpole_random.json');
+load('b', './runs/cartpole_trained.json');
+loop();
+</script>
+</body>
+</html>

@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Q-learning 单步调试器 · 看着代码一步一步学会走路</title>
+<style>
+  :root {
+    --ink: #16202b;
+    --ink-soft: #5a6774;
+    --ink-faint: #8a94a0;
+    --line: #e2e6ec;
+    --bg: #eef1f5;
+    --card: #fff;
+    --accent: #e08a1e;
+    --accent-soft: #fdf3e3;
+    --good: #1f8a70;
+    --bad: #c2453c;
+    --mono: "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  header {
+    padding: 16px 22px 14px;
+    background: var(--card);
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  header h1 { margin: 0; font-size: 16px; font-weight: 650; }
+  header p { margin: 3px 0 0; font-size: 12px; color: var(--ink-faint); }
+  header a { font-size: 12px; color: var(--accent); text-decoration: none; }
+  header a:hover { text-decoration: underline; }
+
+  main {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 14px 22px 32px;
+    display: grid;
+    grid-template-columns: 430px minmax(0, 1fr);
+    gap: 14px;
+    align-items: start;
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 12px 13px;
+  }
+  .card h2 {
+    margin: 0 0 8px;
+    font-size: 12.5px;
+    font-weight: 650;
+    letter-spacing: 0.3px;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 8px;
+  }
+  .card h2 span { font-weight: 400; font-size: 11px; color: var(--ink-faint); letter-spacing: 0; }
+
+  /* 世界 */
+  #world { display: block; width: 100%; max-width: 430px; height: 330px; margin: 0 auto; }
+  .cell-label { font-family: var(--mono); font-size: 9px; }
+
+  /* 状态条 */
+  .statline {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+  }
+  .stat {
+    flex: 1 1 88px;
+    background: #f8fafc;
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    padding: 6px 8px;
+  }
+  .stat b {
+    display: block;
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+  .stat i { font-style: normal; font-size: 10px; color: var(--ink-faint); }
+
+  /* 控制 */
+  .controls { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+  button {
+    font: inherit;
+    font-size: 12.5px;
+    padding: 7px 13px;
+    border-radius: 9px;
+    border: 1px solid var(--line);
+    background: #fff;
+    color: var(--ink);
+    cursor: pointer;
+  }
+  button:hover { background: #f6f8fa; }
+  button:disabled { opacity: 0.4; cursor: default; }
+  button.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+    font-weight: 600;
+  }
+  button.primary:hover { background: #d07d15; }
+  button.ghost { background: #f8fafc; }
+
+  .param-row {
+    display: grid;
+    grid-template-columns: 62px 1fr 48px;
+    gap: 8px;
+    align-items: center;
+    margin-top: 7px;
+    font-size: 12px;
+    color: var(--ink-soft);
+  }
+  .param-row output {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--ink);
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+  input[type="range"] { -webkit-appearance: none; appearance: none; height: 16px; background: transparent; cursor: pointer; }
+  input[type="range"]::-webkit-slider-runnable-track { height: 4px; border-radius: 3px; background: linear-gradient(90deg, #f1d3a4, #f6e3c6); }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 12px; height: 12px; margin-top: -4px; border-radius: 50%;
+    background: #fff; border: 2px solid var(--accent);
+  }
+
+  /* 代码 */
+  pre {
+    margin: 0;
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.5;
+    background: #fbfcfd;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 6px 0;
+    overflow-x: auto;
+  }
+  .ln { display: flex; padding: 0 10px 0 0; border-left: 2px solid transparent; }
+  .ln .no {
+    flex: none;
+    width: 30px;
+    text-align: right;
+    padding-right: 10px;
+    color: #b8c0ca;
+    user-select: none;
+  }
+  .ln .code { white-space: pre; color: #2c3644; }
+  .ln.active {
+    background: #fdf3e3;
+    border-left-color: var(--accent);
+  }
+  .ln.active .no { color: var(--accent); }
+  .ln.active .code { color: #7a4708; font-weight: 600; }
+  .ln .cmt { color: #9aa4b0; }
+
+  /* 讲解 */
+  .explain {
+    margin-top: 10px;
+    padding: 11px 13px;
+    border-radius: 10px;
+    background: var(--accent-soft);
+    border: 1px solid #f0d3a9;
+    font-size: 12.5px;
+    line-height: 1.7;
+    color: #6f4a12;
+  }
+  .explain b { color: #8a5a10; }
+  .explain code {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    background: rgba(255, 255, 255, 0.75);
+    padding: 1px 5px;
+    border-radius: 4px;
+  }
+
+  /* 变量 */
+  .watch { margin-top: 12px; }
+  .watch table { width: 100%; border-collapse: collapse; font-size: 11.5px; }
+  .watch th, .watch td {
+    text-align: left;
+    padding: 3px 8px;
+    border-bottom: 1px solid #f0f2f5;
+  }
+  .watch th { font-weight: 500; color: var(--ink-faint); font-size: 10.5px; letter-spacing: 0.4px; }
+  .watch td.v {
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+    color: var(--ink);
+  }
+  .watch tr.hi td { background: var(--accent-soft); }
+  .watch .pos { color: var(--good); }
+  .watch .neg { color: var(--bad); }
+
+  /* 图表 */
+  #chart { display: block; width: 100%; height: 74px; }
+  .legend { display: flex; gap: 14px; font-size: 11px; color: var(--ink-faint); margin-top: 4px; }
+  .legend i { display: inline-block; width: 14px; height: 2px; background: var(--accent); vertical-align: middle; margin-right: 5px; }
+
+  .foot { font-size: 11.5px; line-height: 1.75; color: var(--ink-soft); margin-top: 12px; }
+  .foot code { font-family: var(--mono); font-size: 11px; background: #f3f5f8; padding: 1px 5px; border-radius: 4px; }
+
+  @media (max-width: 1040px) {
+    main { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Q-learning 单步调试器</h1>
+    <p>点一下走一步 —— 左边是格子里的鸭子，右边是它正在执行的代码，中间那张 Q 表正在被一个字一个字地改写</p>
+  </div>
+  <a href="./README.md">← 回到五课材料</a>
+</header>
+
+<main>
+
+  <!-- 左：世界 + 曲线 -->
+  <section style="display:flex; flex-direction:column; gap:14px; min-width:0;">
+  <div class="card">
+    <h2>格子世界 <span id="worldtick">第 1 回合 · 第 1 步</span></h2>
+    <svg id="world" viewBox="0 0 420 400" role="img" aria-label="5x5 格子世界，起点左上，终点右下，中间有坑"></svg>
+
+    <div class="statline">
+      <div class="stat"><i>当前状态</i><b id="s-state">—</b></div>
+      <div class="stat"><i>本回合回报</i><b id="s-ret">—</b></div>
+      <div class="stat"><i>总回合</i><b id="s-ep">0</b></div>
+      <div class="stat"><i>近 100 回合平均</i><b id="s-avg">—</b></div>
+    </div>
+
+    <div class="controls">
+      <button class="primary" id="btn-step">下一步</button>
+      <button id="btn-back" class="ghost">上一步</button>
+      <button id="btn-play" class="ghost">自动播放</button>
+      <button id="btn-episode" class="ghost">跳到回合结束</button>
+      <button id="btn-fast" class="ghost">快进 200 回合</button>
+      <button id="btn-reset" class="ghost">重来</button>
+    </div>
+    <div style="font-size:10.5px;color:var(--ink-faint);margin-top:7px;">
+      快捷键：<kbd style="font-family:var(--mono);font-size:10px;border:1px solid var(--line);border-radius:4px;padding:0 4px;">空格</kbd> / <kbd style="font-family:var(--mono);font-size:10px;border:1px solid var(--line);border-radius:4px;padding:0 4px;">→</kbd> 下一步 ·
+      <kbd style="font-family:var(--mono);font-size:10px;border:1px solid var(--line);border-radius:4px;padding:0 4px;">←</kbd> 上一步
+    </div>
+
+    <div style="margin-top:12px;">
+      <div class="param-row"><label for="p-alpha">学习率 α</label><input id="p-alpha" type="range" min="0.02" max="1" step="0.02" value="0.2"><output id="o-alpha">0.20</output></div>
+      <div class="param-row"><label for="p-gamma">折扣 γ</label><input id="p-gamma" type="range" min="0.5" max="0.99" step="0.01" value="0.95"><output id="o-gamma">0.95</output></div>
+      <div class="param-row"><label for="p-eps">探索率 ε</label><input id="p-eps" type="range" min="0" max="0.6" step="0.02" value="0.2"><output id="o-eps">0.20</output></div>
+    </div>
+    <p class="foot" style="margin-top:8px;" title="改参数只影响之后的更新，已经学到的 Q 值不会回滚">
+      改参数只影响<strong>之后的更新</strong>，已学到的 Q 值不回滚。
+    </p>
+  </div>
+
+  <div class="card">
+    <h2>每回合回报 <span id="chart-note">还没有数据</span></h2>
+    <canvas id="chart"></canvas>
+    <div class="legend"><span><i></i>每回合回报</span><span>橙线 = 最近一段的滑动平均</span></div>
+  </div>
+
+  </section>
+
+  <!-- 右：代码 + 变量 + 图表 -->
+  <section style="display:flex; flex-direction:column; gap:14px; min-width:0;">
+
+    <div class="card">
+      <h2>正在执行的代码 <span>与 01 脚本 train() 的核心循环一致，只简化了缩进</span></h2>
+      <pre id="code"></pre>
+      <div class="explain" id="explain">点击「下一步」开始。</div>
+    </div>
+
+    <div class="card">
+      <h2>变量监视 <span>每一行都对应上面正在执行的那行代码</span></h2>
+      <div class="watch">
+        <table>
+          <thead><tr><th style="width:130px">变量</th><th style="width:170px">值</th><th>含义</th></tr></thead>
+          <tbody id="watch"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </section>
+
+</main>
+
+<script>
+/* ════════════════════════════════════════════════════════════
+   1. 环境：和 Python 版完全同一套规则
+   ════════════════════════════════════════════════════════════ */
+const W = 5, H = 5;
+const START = [0, 0];
+const GOAL = [4, 4];
+const PIT = [2, 2];
+const ACTIONS = [[-1, 0], [1, 0], [0, -1], [0, 1]];   // 0上 1下 2左 3右
+const ANAME = ["上", "下", "左", "右"];
+const ARROW = ["↑", "↓", "←", "→"];
+
+const keq = (a, b) => a[0] === b[0] && a[1] === b[1];
+const cellKey = (s) => s[0] * W + s[1];
+
+function envStep(state, action) {
+  const [dr, dc] = ACTIONS[action];
+  const r = state[0] + dr, c = state[1] + dc;
+  if (r < 0 || r >= H || c < 0 || c >= W) return [state, -1.0, false];      // 撞墙
+  if (r === PIT[0] && c === PIT[1]) return [[r, c], -10.0, true];            // 掉坑
+  if (r === GOAL[0] && c === GOAL[1]) return [[r, c], 10.0, true];           // 到家
+  return [[r, c], -0.1, false];                                              // 时间成本
+}
+
+/* 可复现的随机数：同一个种子，每次重来看到的过程一样 */
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/* ════════════════════════════════════════════════════════════
+   2. 算法状态：Q 表 + 当前回合的中间变量
+   ════════════════════════════════════════════════════════════ */
+let q, visits, sim, params, rng, history, activeLines, explainText, snapshots, playing, playTimer;
+
+params = { alpha: 0.2, gamma: 0.95, eps: 0.2 };
+
+function initQ() {
+  const out = [];
+  for (let r = 0; r < H; r++) for (let c = 0; c < W; c++) out.push([0, 0, 0, 0]);
+  return out;
+}
+
+function resetAll(keepSeed) {
+  q = initQ();
+  visits = new Uint16Array(W * H * 4);   // 每个格子每个方向被试过几次
+  history = [];
+  sim = {
+    phase: "start",       // start / dice / explore / greedy / env / target / update / advance / check / end
+    state: START.slice(),
+    next: null,
+    episode: 1,
+    stepInEp: 0,
+    total: 0,
+    action: null,
+    reward: null,
+    done: false,
+    dice: null,
+    target: null,
+    oldQ: null,
+    newQ: null,
+    lastMove: null,       // 上一次转移，用于画箭头
+    greedyBest: null,
+  };
+  rng = mulberry32(20261022);
+  snapshots = [];
+  activeLines = [];
+  explainText = "点击「下一步」开始。第一步是把 agent 放到起点。";
+  playing = false;
+  clearInterval(playTimer);
+  document.getElementById("btn-play").textContent = "自动播放";
+  render();
+}
+
+/* 每一步之前存档，才能「上一步」 */
+function snapshot() {
+  snapshots.push(JSON.stringify({
+    q, visits: Array.from(visits), history: history.slice(), sim,
+    activeLines, explainText,
+  }));
+  if (snapshots.length > 4000) snapshots.shift();
+}
+
+function restore() {
+  const s = snapshots.pop();
+  if (!s) return;
+  const o = JSON.parse(s);
+  q = o.q; visits = Uint16Array.from(o.visits); history = o.history; sim = o.sim;
+  activeLines = o.activeLines; explainText = o.explainText;
+  render();
+}
+
+/* ════════════════════════════════════════════════════════════
+   3. 一步 = 一行代码
+   ════════════════════════════════════════════════════════════ */
+const LINE = {
+  epLoop: "L1", start: "L2", total: "L3", stepLoop: "L4",
+  dice: "L5", explore: "L6", else: "L7", values: "L8", best: "L9", greedy: "L10",
+  env: "L12", target: "L14", update: "L15",
+  advance: "L17", addReward: "L18", check: "L19", brk: "L20", record: "L21",
+};
+
+function next() {
+  snapshot();
+
+  const s = sim;
+
+  if (s.phase === "start") {
+    s.state = START.slice();
+    s.stepInEp = 0;
+    s.total = 0;
+    s.action = null; s.reward = null; s.done = false; s.target = null;
+    s.oldQ = null; s.newQ = null; s.dice = null;
+    activeLines = [LINE.epLoop, LINE.start, LINE.total, LINE.stepLoop];
+    explainText = `<b>新回合开始。</b>把 agent 放回起点 (0,0)，把这一回合的累计回报清零。
+      接下来会走最多 60 步 —— 上限是为了防止它在原地绕圈。`;
+    s.phase = "dice";
+    render();
+    return;
+  }
+
+  if (s.phase === "dice") {
+    s.stepInEp += 1;
+    s.dice = rng();
+    const explore = s.dice < params.eps;
+    activeLines = [LINE.dice];
+    explainText = explore
+      ? `<b>掷骰子：${s.dice.toFixed(3)} &lt; ε=${params.eps.toFixed(2)}，所以要探索。</b>
+         这一步是故意"瞎走"。没有它，agent 会一直重复开局时那点偏好，永远发现不了更好的路。`
+      : `<b>掷骰子：${s.dice.toFixed(3)} ≥ ε=${params.eps.toFixed(2)}，这次不探索。</b>
+         去 Q 表里查当前格子，挑分数最高的方向。`;
+    s.phase = explore ? "explore" : "greedy";
+    render();
+    return;
+  }
+
+  if (s.phase === "explore") {
+    s.action = Math.floor(rng() * 4);
+    s.greedyBest = null;
+    activeLines = [LINE.explore];
+    explainText = `<b>随机选了「${ANAME[s.action]}」。</b>注意这只是探索，不代表 Q 表认为它好。
+      这一脚可能踩空，也可能撞进坑里 —— 但无论结果好坏，都会写进 Q 表。`;
+    s.phase = "env";
+    render();
+    return;
+  }
+
+  if (s.phase === "greedy") {
+    const values = q[cellKey(s.state)];
+    const best = Math.max(...values);
+    const bestIdx = values.map((v, i) => (v === best ? i : -1)).filter((i) => i >= 0);
+    s.greedyBest = { best, bestIdx };
+    s.action = bestIdx[Math.floor(rng() * bestIdx.length)];   // 并列时随机挑一个
+    activeLines = [LINE.else, LINE.values, LINE.best, LINE.greedy];
+    explainText = `<b>查表：这一格四个方向的分数是 [${values.map((v) => v.toFixed(2)).join(", ")}]，
+      最高 ${best.toFixed(2)}，所以选「${ANAME[s.action]}」。</b>
+      ${bestIdx.length > 1 ? `有 ${bestIdx.length} 个并列最高，随机挑一个（对应 Python 里的 random.choice）。` : ""}
+      ${best === 0 && bestIdx.length > 0 && visits[cellKey(s.state) * 4 + bestIdx[0]] === 0
+        ? `注意：没试过的方向 Q 值还是初始的 0，看起来比"试过但吃了亏"的方向更好 ——
+           所以它天然会先去试新方向。这是 0 初始化顺手带来的探索偏置，不是 bug。` : ""}`;
+    s.phase = "env";
+    render();
+    return;
+  }
+
+  if (s.phase === "env") {
+    const [nxt, reward, done] = envStep(s.state, s.action);
+    s.next = nxt; s.reward = reward; s.done = done;
+    s.lastMove = { from: s.state.slice(), to: nxt.slice(), blocked: keq(nxt, s.state) };
+    activeLines = [LINE.env];
+    const desc = done
+      ? (keq(nxt, GOAL) ? "走到了终点，奖励 +10，回合结束。" : "掉进坑里，奖励 −10，回合结束。")
+      : (keq(nxt, s.state) ? "撞墙了，留在原地，奖励 −1。" : "正常走一格，奖励 −0.1（每走一步都要付的时间成本）。");
+    explainText = `<b>环境推进一步：从 (${s.state}) 到 (${nxt})。</b>${desc}`;
+    s.phase = "target";
+    render();
+    return;
+  }
+
+  if (s.phase === "target") {
+    const qNext = q[cellKey(s.next)];
+    s.target = s.done ? s.reward : s.reward + params.gamma * Math.max(...qNext);
+    activeLines = [LINE.target];
+    explainText = s.done
+      ? `<b>算目标值：这回合结束了，所以目标值就是眼前奖励 ${s.reward}。</b>
+         没有"以后"了，不用折扣。`
+      : `<b>算目标值 = 眼前奖励 + γ × 下一格最好的分数 = ${s.reward} + ${params.gamma.toFixed(2)} × ${Math.max(...qNext).toFixed(2)} = ${s.target.toFixed(3)}。</b>
+         这一项是整个算法的"远见"：它把一个格子学到的价值，往回流给上一个格子。`;
+    s.phase = "update";
+    render();
+    return;
+  }
+
+  if (s.phase === "update") {
+    const k = cellKey(s.state);
+    const a = s.action;
+    s.oldQ = q[k][a];
+    s.newQ = s.oldQ + params.alpha * (s.target - s.oldQ);
+    q[k][a] = s.newQ;
+    visits[k * 4 + a] += 1;
+    activeLines = [LINE.update];
+    const diff = s.newQ - s.oldQ;
+    explainText = `<b>改写 Q 表：${s.oldQ.toFixed(3)} → ${s.newQ.toFixed(3)}（${diff >= 0 ? "+" : ""}${diff.toFixed(3)}）。</b>
+      公式是 <code>旧值 + α × (目标 − 旧值)</code>：不是把旧值替换成目标，
+      而是只朝目标挪 α=${params.alpha.toFixed(2)} 那一步。这就是它学得慢但稳的原因。`;
+    s.phase = "advance";
+    render();
+    return;
+  }
+
+  if (s.phase === "advance") {
+    s.state = s.next.slice();
+    s.total += s.reward;
+    activeLines = [LINE.advance, LINE.addReward];
+    explainText = `<b>把 agent 挪到新格子 (${s.state})，累计回报加到 ${s.total.toFixed(2)}。</b>
+      注意：Q 表只记"我这一步学到的"，累计回报只用来最后画曲线。`;
+    s.phase = "check";
+    render();
+    return;
+  }
+
+  if (s.phase === "check") {
+    activeLines = [LINE.check];
+    if (s.done) {
+      explainText = `<b>检查到回合结束（${keq(s.state, GOAL) ? "到终点" : "掉坑"}）。</b>
+        跳出内层循环，把这一回合的总分记进历史。`;
+      s.phase = "end";
+    } else if (s.stepInEp >= 60) {
+      explainText = `<b>走了 60 步还没结束，强制中断。</b>防止它在一个角落来回撞。`;
+      s.phase = "end";
+    } else {
+      explainText = `<b>还没结束，回到循环开头，再掷一次骰子。</b>
+        同一个格子可能被访问很多次，每次都会把 Q 值往"更准"推一点。`;
+      s.phase = "dice";
+    }
+    render();
+    return;
+  }
+
+  if (s.phase === "end") {
+    history.push(s.total);
+    activeLines = [LINE.brk, LINE.record];
+    explainText = `<b>第 ${s.episode} 回合结束，得分 ${s.total.toFixed(2)}。</b>
+      现在开新一回合。注意 Q 表不清零 —— 这才是"学习"能累积的原因。`;
+    s.episode += 1;
+    s.phase = "start";
+    render();
+    return;
+  }
+}
+
+/* ════════════════════════════════════════════════════════════
+   4. 渲染
+   ════════════════════════════════════════════════════════════ */
+const CODE = [
+  ["L1",  "    for ep in range(EPISODES):"],
+  ["L2",  "        state = START"],
+  ["L3",  "        total = 0.0"],
+  ["L4",  "        for _ in range(60):"],
+  ["L5",  "            if random.random() < EPSILON:"],
+  ["L6",  "                action = random.randrange(4)"],
+  ["L7",  "            else:"],
+  ["L8",  "                values = q[state]"],
+  ["L9",  "                best = max(values)"],
+  ["L10", "                action = random.choice([a for a, v in enumerate(values) if v == best])"],
+  ["L11", ""],
+  ["L12", "            nxt, reward, done = step(state, action)"],
+  ["L13", ""],
+  ["L14", "            target = reward if done else reward + GAMMA * max(q[nxt])"],
+  ["L15", "            q[state][action] += ALPHA * (target - q[state][action])"],
+  ["L16", ""],
+  ["L17", "            state = nxt"],
+  ["L18", "            total += reward"],
+  ["L19", "            if done:"],
+  ["L20", "                break"],
+  ["L21", "        history.append(total)"],
+];
+
+
+const LINE_NOTE = {
+  L1: "每个回合都从这里重新开始",
+  L2: "把 agent 放回起点",
+  L3: "这一回合的累计回报清零",
+  L4: "最多走 60 步，防止原地绕圈",
+  L5: "ε-贪心：以 ε 的概率随机走",
+  L6: "探索：随便挑一个方向",
+  L7: "否则利用已知的最优动作",
+  L8: "取出这一格四个方向的分数",
+  L9: "找最高分",
+  L10: "并列最高时随机挑一个",
+  L12: "让环境推进一格，拿到奖励和结束标志",
+  L14: "目标值 = 眼前奖励 + 折扣 × 下一格最大值",
+  L15: "这才是学习：旧值朝目标值挪 α 步",
+  L17: "移动到新格子",
+  L18: "累计回报",
+  L19: "结束了就跳出循环",
+  L20: "break",
+  L21: "把这一回合的分数记进历史",
+};
+
+function renderCode() {
+  const pre = document.getElementById("code");
+  pre.innerHTML = CODE.map(([id, text]) => {
+    const on = activeLines.includes(id);
+    const shown = text === "" ? " " : escapeHtml(text);
+    return `<div class="ln${on ? " active" : ""}" data-id="${id}" title="${LINE_NOTE[id] || ''}"><span class="no">${id.slice(1)}</span><span class="code">${shown}</span></div>`;
+  }).join("");
+  const el = pre.querySelector(".ln.active");
+  if (el) {
+    const box = pre.getBoundingClientRect();
+    const r = el.getBoundingClientRect();
+    if (r.top < box.top || r.bottom > box.bottom) el.scrollIntoView({ block: "nearest" });
+  }
+}
+
+function escapeHtml(s) {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+const CELL = 64, PAD = 14, GAP = 4;
+
+function renderWorld() {
+  const svg = document.getElementById("world");
+  const parts = [];
+  const size = W * CELL + (W - 1) * GAP;
+
+  // 背景格
+  for (let r = 0; r < H; r++) {
+    for (let c = 0; c < W; c++) {
+      const x = PAD + c * (CELL + GAP);
+      const y = PAD + r * (CELL + GAP);
+      const isPit = r === PIT[0] && c === PIT[1];
+      const isGoal = r === GOAL[0] && c === GOAL[1];
+      const isCur = sim.state[0] === r && sim.state[1] === c;
+      const fill = isPit ? "#fbeceb" : isGoal ? "#eaf5f0" : "#fbfcfd";
+      const stroke = isCur ? "#e08a1e" : "#eef1f5";
+      parts.push(`<rect x="${x}" y="${y}" width="${CELL}" height="${CELL}" rx="9"
+        fill="${fill}" stroke="${stroke}" stroke-width="${isCur ? 2 : 1}"/>`);
+
+      if (isPit) {
+        parts.push(`<text x="${x + CELL / 2}" y="${y + CELL / 2 + 6}" text-anchor="middle"
+          font-size="20" fill="#c2453c" font-family="system-ui">×</text>`);
+        parts.push(`<text x="${x + CELL / 2}" y="${y + CELL - 9}" text-anchor="middle"
+          font-size="9" fill="#c2453c" font-family="var(--mono)">−10</text>`);
+      } else if (isGoal) {
+        parts.push(`<rect x="${x + CELL / 2 - 8}" y="${y + 14}" width="3" height="34" fill="#1f8a70"/>`);
+        parts.push(`<path d="M${x + CELL / 2 - 5} ${y + 15} L${x + CELL / 2 + 20} ${y + 24}
+          L${x + CELL / 2 - 5} ${y + 33} Z" fill="#1f8a70"/>`);
+        parts.push(`<text x="${x + CELL / 2}" y="${y + CELL - 9}" text-anchor="middle"
+          font-size="9" fill="#1f8a70" font-family="var(--mono)">+10</text>`);
+      } else {
+        // 策略箭头 + 最大值（只看试过的方向）
+        const key = cellKey([r, c]);
+        const vals = q[key];
+        let idx = -1, best = -Infinity;
+        for (let a = 0; a < 4; a++) {
+          if (visits[key * 4 + a] > 0 && vals[a] > best) { best = vals[a]; idx = a; }
+        }
+        const learned = idx >= 0;
+        if (learned) {
+          parts.push(`<text x="${x + CELL / 2}" y="${y + CELL / 2 + 4}" text-anchor="middle"
+            font-size="22" fill="${best >= 0 ? "#1f8a70" : "#c2453c"}" opacity="0.75">${ARROW[idx]}</text>`);
+          parts.push(`<text x="${x + CELL / 2}" y="${y + CELL - 9}" text-anchor="middle"
+            font-size="9.5" fill="#8a94a0" font-family="var(--mono)">${best.toFixed(2)}</text>`);
+        } else {
+          parts.push(`<text x="${x + CELL / 2}" y="${y + CELL / 2 + 4}" text-anchor="middle"
+            font-size="13" fill="#d3dae3" font-family="var(--mono)">·</text>`);
+        }
+      }
+    }
+  }
+
+  // 上一次转移的箭头
+  if (sim.lastMove) {
+    const [fr, fc] = sim.lastMove.from;
+    const [tr, tc] = sim.lastMove.to;
+    if (fr !== tr || fc !== tc) {
+      const x1 = PAD + fc * (CELL + GAP) + CELL / 2;
+      const y1 = PAD + fr * (CELL + GAP) + CELL / 2;
+      const x2 = PAD + tc * (CELL + GAP) + CELL / 2;
+      const y2 = PAD + tr * (CELL + GAP) + CELL / 2;
+      parts.push(`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#e08a1e"
+        stroke-width="2" stroke-dasharray="4 4" opacity="0.6"/>`);
+    }
+  }
+
+  // agent
+  const ax = PAD + sim.state[1] * (CELL + GAP) + CELL / 2;
+  const ay = PAD + sim.state[0] * (CELL + GAP) + CELL / 2;
+  parts.push(`<circle cx="${ax}" cy="${ay}" r="13" fill="#e08a1e" opacity="0.16"/>`);
+  parts.push(`<circle cx="${ax}" cy="${ay}" r="7" fill="#e08a1e"/>`);
+  parts.push(`<circle cx="${ax}" cy="${ay - 2.5}" r="2.2" fill="#fff"/>`);
+
+  parts.push(`<text x="${PAD}" y="${PAD + size + 22}" font-size="10.5" fill="#8a94a0">
+    箭头 = 当前策略  ·  数字 = 该格试过的方向里最高的 Q 值  ·  · = 还没试过</text>`);
+
+  svg.setAttribute("viewBox", `0 0 ${size + PAD * 2} ${size + PAD + 34}`);
+  svg.innerHTML = parts.join("");
+}
+
+const PHASE_NAME = {
+  start: "开局", dice: "掷骰子", explore: "随机探索", greedy: "查表选动作",
+  env: "环境推进", target: "算目标值", update: "改写 Q 表",
+  advance: "移动 + 计分", check: "判断结束", end: "结算回合",
+};
+
+function renderWatch() {
+  const k = cellKey(sim.state);
+  const vals = q[k];
+  const rows = [
+    ["state", `(${sim.state[0]}, ${sim.state[1]})`, `当前格子，第 ${sim.stepInEp} 步`, false],
+    ["q[state]", `[${vals.map((v, a) => (visits[k * 4 + a] > 0 ? v.toFixed(2) : "—")).join(", ")}]`, "这一格四个方向的分数（上/下/左/右）；— 表示还没试过", sim.phase === "greedy" || sim.phase === "explore"],
+    ["random()", sim.dice === null ? "—" : sim.dice.toFixed(3), `与 ε=${params.eps.toFixed(2)} 比较，决定要不要探索`, sim.phase === "dice"],
+    ["action", sim.action === null ? "—" : `${ANAME[sim.action]} (${sim.action})`, "上一步选的动作", sim.phase === "explore" || sim.phase === "greedy"],
+    ["reward", sim.reward === null ? "—" : sim.reward.toFixed(2), "环境给的即时奖励", sim.phase === "env"],
+    ["done", sim.reward === null ? "—" : String(sim.done), "这一回合是否结束", sim.phase === "env" || sim.phase === "target"],
+    ["target", sim.target === null ? "—" : sim.target.toFixed(3), "这一格「应该」值多少分", sim.phase === "target"],
+    ["Q 更新", sim.oldQ === null ? "—" : `${sim.oldQ.toFixed(3)} → ${sim.newQ.toFixed(3)}`, "被改写的那个数", sim.phase === "update" || sim.phase === "advance"],
+  ];
+  document.getElementById("watch").innerHTML = rows.map(([n, v, d, hi]) => `
+    <tr class="${hi ? "hi" : ""}">
+      <td class="v">${escapeHtml(n)}</td>
+      <td class="v">${escapeHtml(String(v))}</td>
+      <td style="color:#8a94a0">${escapeHtml(d)}</td>
+    </tr>`).join("");
+}
+
+function renderStats() {
+  document.getElementById("s-state").textContent = `(${sim.state[0]}, ${sim.state[1]})`;
+  document.getElementById("s-ret").textContent = sim.total.toFixed(2);
+  document.getElementById("s-ep").textContent = String(history.length || (sim.episode - 1));
+  const recent = history.slice(-100);
+  document.getElementById("s-avg").textContent = recent.length
+    ? (recent.reduce((a, b) => a + b, 0) / recent.length).toFixed(2)
+    : "—";
+  document.getElementById("worldtick").textContent =
+    `第 ${sim.episode} 回合 · 第 ${sim.stepInEp} 步 · 下一步：${PHASE_NAME[sim.phase] || ""}`;
+  document.getElementById("explain").innerHTML = explainText;
+}
+
+function renderChart() {
+  const cv = document.getElementById("chart");
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const w = cv.clientWidth, h = 74;
+  cv.width = w * dpr; cv.height = h * dpr;
+  const ctx = cv.getContext("2d");
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, w, h);
+
+  const data = history.slice(-400);
+  const pad = { l: 30, r: 6, t: 8, b: 16 };
+  const plotW = w - pad.l - pad.r, plotH = h - pad.t - pad.b;
+
+  ctx.strokeStyle = "#eef1f5";
+  ctx.lineWidth = 1;
+  [-10, 0, 10].forEach((v) => {
+    const y = pad.t + plotH * (1 - (v + 12) / 24);
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(w - pad.r, y); ctx.stroke();
+    ctx.fillStyle = "#b8c0ca";
+    ctx.font = "9px -apple-system, sans-serif";
+    ctx.fillText(String(v), 4, y + 3);
+  });
+
+  if (!data.length) {
+    document.getElementById("chart-note").textContent = "还没有数据";
+    return;
+  }
+
+  const xOf = (i) => pad.l + (plotW * i) / Math.max(data.length - 1, 1);
+  const yOf = (v) => pad.t + plotH * (1 - (v + 12) / 24);
+
+  ctx.strokeStyle = "#e2e6ec";
+  ctx.lineWidth = 0.8;
+  ctx.beginPath();
+  data.forEach((v, i) => (i ? ctx.lineTo(xOf(i), yOf(v)) : ctx.moveTo(xOf(i), yOf(v))));
+  ctx.stroke();
+
+  if (data.length >= 8) {
+    const win = Math.max(5, Math.floor(data.length / 20));
+    ctx.strokeStyle = "#e08a1e";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    let started = false;
+    for (let i = win - 1; i < data.length; i++) {
+      const avg = data.slice(i - win + 1, i + 1).reduce((a, b) => a + b, 0) / win;
+      const x = xOf(i), y = yOf(avg);
+      started ? ctx.lineTo(x, y) : (ctx.moveTo(x, y), (started = true));
+    }
+    ctx.stroke();
+  }
+
+  const last = history[history.length - 1];
+  document.getElementById("chart-note").textContent =
+    `共 ${history.length} 回合 · 最新一回合 ${last.toFixed(2)}`;
+}
+
+function render() {
+  renderCode();
+  renderWorld();
+  renderWatch();
+  renderStats();
+  renderChart();
+  document.getElementById("btn-back").disabled = snapshots.length === 0;
+}
+
+/* ════════════════════════════════════════════════════════════
+   5. 交互
+   ════════════════════════════════════════════════════════════ */
+document.getElementById("btn-step").onclick = () => { if (playing) togglePlay(); next(); };
+document.getElementById("btn-back").onclick = () => { if (playing) togglePlay(); restore(); };
+
+document.getElementById("btn-episode").onclick = () => {
+  if (playing) togglePlay();
+  const target = sim.episode;
+  let guard = 0;
+  while (sim.episode === target && guard < 400) { next(); guard++; }
+};
+
+document.getElementById("btn-fast").onclick = () => {
+  if (playing) togglePlay();
+  const until = sim.episode + 200;
+  let guard = 0;
+  while (sim.episode < until && guard < 40000) { next(); guard++; }
+};
+
+document.getElementById("btn-reset").onclick = () => resetAll();
+
+function togglePlay() {
+  playing = !playing;
+  const btn = document.getElementById("btn-play");
+  btn.textContent = playing ? "暂停" : "自动播放";
+  btn.classList.toggle("primary", playing);
+  clearInterval(playTimer);
+  if (playing) playTimer = setInterval(() => next(), 420);
+}
+
+document.getElementById("btn-play").onclick = togglePlay;
+
+[["alpha", "p-alpha", "o-alpha"], ["gamma", "p-gamma", "o-gamma"], ["eps", "p-eps", "o-eps"]]
+  .forEach(([key, inputId, outId]) => {
+    const input = document.getElementById(inputId);
+    const out = document.getElementById(outId);
+    input.oninput = () => {
+      params[key] = parseFloat(input.value);
+      out.textContent = key === "gamma" ? params[key].toFixed(2) : params[key].toFixed(2);
+    };
+    out.textContent = params[key].toFixed(2);
+  });
+
+window.addEventListener("keydown", (e) => {
+  if (e.code === "Space") { e.preventDefault(); if (!playing) next(); }
+  if (e.code === "ArrowRight") { e.preventDefault(); next(); }
+  if (e.code === "ArrowLeft") { e.preventDefault(); restore(); }
+});
+
+resetAll();
+</script>
+</body>
+</html>

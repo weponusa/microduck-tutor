@@ -1,0 +1,16 @@
+# WorkBuddy session data and local memory
+.workbuddy/
+
+# Local Python environments and caches
+.venv/
+__pycache__/
+*.py[cod]
+
+# OS and editor files
+.DS_Store
+.vscode/
+.idea/
+
+# Local logs and temporary files
+*.log
+*.tmp

@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>从零学强化学习 · 用一只学走路的鸭子讲清楚</title>
+<style>
+  :root {
+    --ink: #1a242f;
+    --ink-soft: #4f5c6a;
+    --ink-faint: #8894a1;
+    --line: #e4e8ee;
+    --line-soft: #eef1f5;
+    --bg: #fbfbfc;
+    --paper: #fff;
+    --accent: #d98324;
+    --accent-soft: #fdf4e8;
+    --accent-line: #f2d6ae;
+    --good: #1f7a60;
+    --bad: #b8412f;
+    --mono: "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    font-size: 16px;
+    line-height: 1.85;
+  }
+
+  /* 布局 */
+  .wrap {
+    display: grid;
+    grid-template-columns: 216px minmax(0, 760px);
+    gap: 48px;
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 40px 28px 120px;
+    align-items: start;
+  }
+  nav.toc { position: sticky; top: 32px; font-size: 13px; }
+  nav.toc .toc-title {
+    font-size: 11px;
+    letter-spacing: 1.4px;
+    color: var(--ink-faint);
+    margin-bottom: 10px;
+  }
+  nav.toc a {
+    display: block;
+    padding: 5px 0 5px 11px;
+    color: var(--ink-soft);
+    text-decoration: none;
+    border-left: 2px solid transparent;
+    line-height: 1.5;
+  }
+  nav.toc a:hover { color: var(--accent); border-left-color: var(--accent-line); }
+  nav.toc a.sub { padding-left: 22px; font-size: 12px; color: var(--ink-faint); }
+
+  /* 排版 */
+  article { min-width: 0; }
+  .cover { padding-bottom: 26px; border-bottom: 1px solid var(--line); margin-bottom: 34px; }
+  .cover .kicker {
+    font-size: 12px;
+    letter-spacing: 1.6px;
+    color: var(--accent);
+    margin-bottom: 12px;
+  }
+  h1 { font-size: 30px; line-height: 1.35; margin: 0 0 12px; font-weight: 650; letter-spacing: -0.3px; }
+  .cover .lede { font-size: 16px; color: var(--ink-soft); margin: 0 0 18px; }
+  .cover .meta {
+    display: flex; gap: 18px; flex-wrap: wrap;
+    font-size: 12px; color: var(--ink-faint);
+  }
+
+  h2 {
+    font-size: 21px;
+    font-weight: 650;
+    margin: 58px 0 6px;
+    padding-top: 18px;
+    border-top: 1px solid var(--line);
+    letter-spacing: -0.2px;
+  }
+  h2 .num {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--accent);
+    display: block;
+    margin-bottom: 4px;
+    letter-spacing: 1px;
+  }
+  h3 { font-size: 16px; font-weight: 650; margin: 30px 0 8px; }
+  p { margin: 0 0 15px; }
+  strong { font-weight: 650; }
+  em { font-style: normal; background: linear-gradient(transparent 62%, #fbe6c6 62%); padding: 0 2px; }
+
+  .lead {
+    font-size: 15.5px;
+    color: var(--ink-soft);
+    padding: 12px 16px;
+    background: var(--accent-soft);
+    border-left: 3px solid var(--accent-line);
+    border-radius: 0 8px 8px 0;
+    margin: 0 0 22px;
+  }
+  .lead b { color: var(--ink); }
+
+  code {
+    font-family: var(--mono);
+    font-size: 13.5px;
+    background: #f4f6f8;
+    padding: 1.5px 5px;
+    border-radius: 4px;
+    color: #2d3b4a;
+  }
+  pre {
+    font-family: var(--mono);
+    font-size: 13px;
+    line-height: 1.7;
+    background: #f8fafc;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 12px 14px;
+    overflow-x: auto;
+    margin: 0 0 18px;
+  }
+  pre code { background: none; padding: 0; font-size: 13px; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+    margin: 0 0 20px;
+  }
+  th, td {
+    text-align: left;
+    padding: 9px 10px;
+    border-bottom: 1px solid var(--line-soft);
+    vertical-align: top;
+  }
+  th { font-size: 12.5px; color: var(--ink-faint); font-weight: 500; letter-spacing: 0.3px; }
+  td.k { font-family: var(--mono); font-size: 12.5px; color: var(--accent); white-space: nowrap; }
+
+  .check {
+    margin: 22px 0 0;
+    padding: 14px 16px;
+    border: 1px dashed var(--line);
+    border-radius: 10px;
+    background: #fcfdfe;
+  }
+  .check .q { font-size: 14px; color: var(--ink); margin-bottom: 8px; }
+  .check .q::before { content: "检查点"; font-size: 10.5px; letter-spacing: 1.2px; color: var(--accent); display: block; margin-bottom: 4px; }
+  .check button {
+    font: inherit; font-size: 12.5px; color: var(--accent);
+    background: none; border: 1px solid var(--accent-line); border-radius: 7px;
+    padding: 4px 10px; cursor: pointer;
+  }
+  .check button:hover { background: var(--accent-soft); }
+  .check .a { display: none; margin-top: 10px; font-size: 14px; color: var(--ink-soft); }
+  .check.open .a { display: block; }
+
+  .lab {
+    margin: 22px 0;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--paper);
+    padding: 16px 18px;
+  }
+  .lab h4 {
+    margin: 0 0 4px;
+    font-size: 13.5px;
+    font-weight: 650;
+  }
+  .lab .hint { font-size: 12px; color: var(--ink-faint); margin: 0 0 14px; }
+  .lab button {
+    font: inherit; font-size: 12.5px; padding: 6px 12px;
+    border: 1px solid var(--line); border-radius: 8px;
+    background: #fff; color: var(--ink); cursor: pointer;
+  }
+  .lab button:hover { background: #f6f8fa; }
+  .lab button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+  .lab button.primary:hover { background: #c8761c; }
+  .lab input[type="range"] { -webkit-appearance: none; appearance: none; height: 18px; background: transparent; cursor: pointer; flex: 1; }
+  .lab input[type="range"]::-webkit-slider-runnable-track { height: 4px; border-radius: 3px; background: #f0dcc0; }
+  .lab input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 14px; height: 14px; margin-top: -5px;
+    border-radius: 50%; background: #fff; border: 2px solid var(--accent);
+  }
+
+  .bar-outer {
+    position: relative;
+    height: 26px;
+    background: #f4f6f8;
+    border-radius: 6px;
+    overflow: hidden;
+    margin: 10px 0 6px;
+  }
+  .bar-inner {
+    height: 100%;
+    background: linear-gradient(90deg, #f6d9ae, #e39c3c);
+    width: 0;
+    transition: width 0.25s ease;
+  }
+  .bar-mark {
+    position: absolute; top: 0; bottom: 0; width: 2px; background: #1f7a60; opacity: 0.5;
+  }
+  .readout {
+    display: flex; justify-content: space-between;
+    font-family: var(--mono); font-size: 12px; color: var(--ink-soft);
+  }
+  .formula {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    background: #f8fafc;
+    border-radius: 7px;
+    padding: 8px 11px;
+    margin-top: 10px;
+    line-height: 1.7;
+    white-space: pre-wrap;
+  }
+
+  .dots { display: flex; gap: 4px; flex-wrap: wrap; margin: 12px 0 6px; }
+  .dot {
+    width: 16px; height: 16px; border-radius: 4px;
+    background: #eef1f5;
+  }
+  .dot.explore { background: var(--accent); }
+  .dot.use { background: #cfd8e3; }
+
+  .big-number {
+    font-family: var(--mono);
+    font-size: 26px;
+    color: var(--accent);
+    letter-spacing: -0.5px;
+  }
+  .note {
+    font-size: 13px;
+    color: var(--ink-faint);
+    border-left: 2px solid var(--line);
+    padding-left: 12px;
+    margin: 0 0 18px;
+  }
+  .cols2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .box {
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 13px 15px;
+    background: var(--paper);
+  }
+  .box h5 { margin: 0 0 6px; font-size: 13.5px; font-weight: 650; }
+  .box p { margin: 0; font-size: 13.5px; color: var(--ink-soft); }
+
+  .end-note {
+    margin-top: 46px;
+    padding: 18px 20px;
+    border-radius: 12px;
+    background: #f8fafc;
+    border: 1px solid var(--line);
+    font-size: 14px;
+    color: var(--ink-soft);
+  }
+  .end-note b { color: var(--ink); }
+
+  @media (max-width: 900px) {
+    .wrap { grid-template-columns: 1fr; gap: 0; padding: 24px 18px 80px; }
+    nav.toc { display: none; }
+    .cols2 { grid-template-columns: 1fr; }
+    h1 { font-size: 24px; }
+  }
+  @media print {
+    nav.toc, .check button { display: none; }
+    .check .a { display: block !important; }
+    body { background: #fff; font-size: 12pt; }
+    .wrap { display: block; max-width: none; padding: 0; }
+    h2 { page-break-after: avoid; }
+    .lab { page-break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+<nav class="toc">
+  <div class="toc-title">目录</div>
+  <a href="#c0">0 · 先看一个具体问题</a>
+  <a href="#c1">1 · 什么叫学习</a>
+  <a href="#c2">2 · 四个词变成可计算</a>
+  <a href="#c3">3 · 先学会记账：Q 表</a>
+  <a href="#c4">4 · 那行公式</a>
+  <a href="#c5">5 · 探索与折扣</a>
+  <a href="#c6">6 · 表格装不下的时候</a>
+  <a href="#c7">7 · 真跑起来的样子</a>
+  <a href="#c8">8 · 自测十题</a>
+  <a href="#app" class="sub">附录：术语表</a>
+  <a href="#run" class="sub">附录：怎么动手</a>
+</nav>
+
+<article>
+
+<div class="cover">
+  <div class="kicker">零基础读本 · 用时约 40 分钟</div>
+  <h1>从零学强化学习<br>用一只学走路的鸭子讲清楚</h1>
+  <p class="lede">不用数学，不背公式，不用先学 Python。整本材料只有一个例子：你昨天在浏览器里做的那只鸭子。</p>
+  <div class="meta">
+    <span>读完能做的：看懂训练曲线，判断一个强化学习项目靠不靠谱</span>
+    <span>配套实验：5 个，全部在这台机器上真跑过</span>
+  </div>
+</div>
+
+<div class="end-note" style="margin-top:0; margin-bottom:34px;">
+  <b>如果只记三句话：</b><br>
+  一、强化学习就是让程序反复试，把「在哪一步做什么比较划算」记下来。<br>
+  二、记的东西少的时候用表格，多到写不下时改用一张神经网络去「猜」。<br>
+  三、它学得很难看：先笨很久，然后突然会了。曲线前面那段平地是正常的。
+</div>
+
+<!-- ══════════════ 0 ══════════════ -->
+<h2 id="c0"><span class="num">第 0 章</span>先看一个具体问题</h2>
+
+<p class="lead"><b>这一章只讲一件事：</b>你那台鸭子站不住，问题到底出在哪。</p>
+
+<p>你昨天做的模拟器里，鸭子的默认状态是「站着」。打开页面，它会撑 47 步，大约 0.92 秒，然后倒下。</p>
+
+<p>看起来像坏了。其实它一点没坏。真机上这台鸭子也站不住——<em>静止站立本身就是一个需要持续微调的动作</em>，不是把腿摆成某个角度就能一直待着。它靠每 20 毫秒调整一次 14 个关节的角度，把自己「扶」在倒与不倒之间。</p>
+
+<p>所以真正的问题是：这套「每 20 毫秒调一次」的规则，从哪来？</p>
+
+<table>
+  <thead><tr><th style="width:120px">做法</th><th>怎么做</th><th>结果</th></tr></thead>
+  <tbody>
+    <tr><td>一、人手调</td><td>我试过：把舵机刚度从真机参数拉到 8 倍</td><td>能站满 10 秒。但真机刚度是硬件决定的，调不了。这是作弊</td></tr>
+    <tr><td>二、抄答案</td><td>官方仓库里有训练好的策略文件</td><td>能用，但那套参数是按它的地面、电池、舵机磨损度算的，换环境未必灵</td></tr>
+    <tr><td>三、让它自己试</td><td>给出「摔了扣分、站住加分」的规则，让它反复练</td><td>8 分钟后，它从 47 步练到撑满 500 步（10 秒）</td></tr>
+  </tbody>
+</table>
+
+<p>第三条路就是强化学习。这本书讲的就是它。</p>
+
+<div class="check">
+  <div class="q">为什么不直接把「人手调好的参数」抄到真机上？</div>
+  <button onclick="this.parentNode.classList.toggle('open')">看答案</button>
+  <div class="a">因为那 8 倍刚度是我在模拟器里改的一个数字，真机舵机的力矩是固定的。我改的是「模型认为舵机有多大力」，真机不会因为我认为就变大力。<br><br>这件事有个名字，叫「仿真到现实的差距」（sim-to-real gap）。强化学习的价值，是让程序自己找出一套动作序列去适应真实条件，而不是依赖一个我瞎调的数字。</div>
+</div>
+
+<!-- ══════════════ 1 ══════════════ -->
+<h2 id="c1"><span class="num">第 1 章</span>什么叫「学习」</h2>
+
+<p class="lead"><b>这一章只讲一件事：</b>三种学习方式的区别，以及为什么你只能用第三种。</p>
+
+<p>还是那只鸭子。你想让它学会站住，有三种办法。</p>
+
+<h3>办法一：把每种情况都写好</h3>
+<p>「如果身体往前倾 3 度，就把脚踝往上调 2 度。」听起来可行，直到你发现它每 20 毫秒要判断一次，而身体的姿态有 36 个数字在同时变化。你要写的情况数量，比宇宙里的原子还多（第 6 章会算给你看）。</p>
+
+<h3>办法二：给它标准答案</h3>
+<p>找一个人，把「这个姿态下应该给什么指令」全部标注出来。这就是普通的机器学习（监督学习）在做的事：给一堆输入和正确答案，让它学规律。</p>
+<p>问题是：<em>没有任何人能标注这个答案</em>。人自己都不知道第 137 毫秒该给舵机多少度。你自己站起来的时候，也没在脑子里算过这件事。</p>
+
+<h3>办法三：让它摔</h3>
+<p>不告诉它该怎么做，只告诉它做得好不好：站住加 1 分，倒下结束。它自己试，试到某一套动作能让分变高，就记住那套动作。</p>
+
+<p>这就是强化学习。它需要的东西很简单：<em>一个能给它打分的环境</em>。标准答案反而用不上。</p>
+
+<table>
+  <thead><tr><th style="width:96px"></th><th>监督学习</th><th>强化学习</th></tr></thead>
+  <tbody>
+    <tr><td>你提供</td><td>输入 + 正确答案</td><td>环境 + 打分规则</td></tr>
+    <tr><td>数据从哪来</td><td>人标注</td><td>程序自己试出来</td></tr>
+    <tr><td>反馈节奏</td><td>每个样本立刻知道对错</td><td>常常几十步之后才知道结果</td></tr>
+    <tr><td>你的鸭子</td><td>没人能标注「该给什么指令」</td><td>只能让它自己摔</td></tr>
+  </tbody>
+</table>
+
+<div class="check">
+  <div class="q">为什么「鸭子每个时刻该给什么指令」没法标注，而「这张图是不是猫」可以标注？</div>
+  <button onclick="this.parentNode.classList.toggle('open')">看答案</button>
+  <div class="a">因为「是不是猫」是一个静态判断，人看一眼就知道。<br><br>而「第 137 毫秒该给舵机多少度」是一个连续动作，它的对错取决于后面发生了什么。同一脚，可能这一刻是对的、下一刻就导致摔倒。人对这种「延迟的效果」没有可靠的判断力，标出来的数据也是错的。</div>
+</div>
+
+<!-- ══════════════ 2 ══════════════ -->
+<h2 id="c2"><span class="num">第 2 章</span>把「试错」变成一个可以计算的东西</h2>
+
+<p class="lead"><b>这一章只讲一件事：</b>四个词。认识这四个词，你就能读懂 90% 的强化学习文章。</p>
+
+<p>要把「摔了学乖」变成程序能做的事，先得把世界翻译成数字。只需要四个词。</p>
+
+<table>
+  <thead><tr><th style="width:88px">词</th><th style="width:150px">意思</th><th style="width:190px">格子世界里是什么</th><th>你的鸭子里是什么</th></tr></thead>
+  <tbody>
+    <tr><td class="k">状态</td><td>它此刻能感知到的数字</td><td>它在第几行第几列，比如 (0,0)</td><td>36 个数：身体朝向 4 个、转动速度 3 个、14 个关节角、14 个关节转速、离地高度 1 个</td></tr>
+    <tr><td class="k">动作</td><td>它此刻能做的选择</td><td>上、下、左、右，四个选项</td><td>14 个关节各自的目标角度（连续值，不是四选一）</td></tr>
+    <tr><td class="k">奖励</td><td>做完之后环境给的分数</td><td>到终点 +10，掉坑 −10，撞墙 −1，走一格 −0.1</td><td>活着 +1，站得直再 +0.5，动作乱抖扣一点</td></tr>
+    <tr><td class="k">回合</td><td>从开始到结束的一段</td><td>从起点走到终点或掉坑，最多 60 步</td><td>从站起来到倒下，或撑满 500 步（10 秒）</td></tr>
+  </tbody>
+</table>
+
+<p>再加两个词。它们不属于世界，属于程序自己。</p>
+
+<table>
+  <thead><tr><th style="width:88px">词</th><th>意思</th><th>在鸭子里</th></tr></thead>
+  <tbody>
+    <tr><td class="k">策略</td><td>一个函数：给它状态，它给出动作</td><td>一张写着几万个参数的神经网络。强化学习要学的就是这些参数</td></tr>
+    <tr><td class="k">回报</td><td>从此刻往后，所有奖励打折加起来的和</td><td>「我现在站得挺好」和「我能站到最后」是两件事，回报算的是后者</td></tr>
+  </tbody>
+</table>
+
+<p>这里有个容易搞混的地方，值得单独说：<strong>奖励是当下拿到的分数，回报是往后总共能拿到的分数。</strong>一个动作可能让你立刻得 0 分，但让你后面能活 400 步；另一个动作让你立刻得 1 分，然后两步后摔倒。</p>
+
+<p>强化学习优化的永远是回报。你要它学会算这笔账。</p>
+
+<div class="check">
+  <div class="q">鸭子的「动作」和格子世界的「动作」，最大的区别是什么？这个区别会带来什么麻烦？</div>
+  <button onclick="this.parentNode.classList.toggle('open')">看答案</button>
+  <div class="a">格子世界只有 4 个选项，可以用一张表列出「每个格子选哪一个」。<br><br>鸭子有 14 个连续的角度值，每个可以是 −1.5 到 1.5 之间的任意数。组合起来是无穷多种，列不出来。所以鸭子不能用表格记，只能用一个函数去「算」——这就是第 6 章要讲的神经网络。</div>
+</div>
+
+<!-- ══════════════ 3 ══════════════ -->
+<h2 id="c3"><span class="num">第 3 章</span>先学会记账：Q 表</h2>
+
+<p class="lead"><b>这一章只讲一件事：</b>先把「哪个格子往哪走划算」记在一张纸上。</p>
+
+<p>最朴素的做法：拿一张表，行是格子，列是方向，格子里写一个分数——<strong>从这个格子往这个方向走，一直走到结束，大概能拿多少分。</strong></p>
+
+<p>5×5 的格子，每个格子 4 个方向，一共 25 × 4 = <strong>100 个数</strong>。这张表叫 Q 表，里面的数叫 Q 值。</p>
+
+<p>一开始什么都不知道，所以 100 个数全是 0。</p>
+
+<table>
+  <thead><tr><th>从起点 (0,0) 出发</th><th>上</th><th>下</th><th>左</th><th>右</th></tr></thead>
+  <tbody>
+    <tr><td>刚开局时</td><td class="k">0</td><td class="k">0</td><td class="k">0</td><td class="k">0</td></tr>
+    <tr><td>练 200 回合之后</td><td class="k">4.27</td><td class="k">2.98</td><td class="k">3.69</td><td class="k">6.38</td></tr>
+  </tbody>
+</table>
+
+<p>第二行是真跑出来的数。它读作：从起点往上走，最后大概拿 4.27 分；往下 2.98 分；往左 3.69 分；往右 <strong>6.38 分</strong>。四个方向里右边最高，所以它开局就往右。</p>
+
+<p>注意四个数都变了，没有一个还是 0。因为它从起点出发过很多次，每次走不同方向都会更新一格——这四个数都是「试出来的」。</p>
+
+<p>这里要盯住一件事：<strong>Q 值记的是「往后的总分」，不是「这一步的奖励」。</strong>往右走这一步，环境只给了 −0.1 分（每走一步都要付的时间成本）。但走完这一步之后，后面还有 6.4 分等着它。Q 表记的是 6.38 这个总数。</p>
+
+<p>为什么终点那格不需要记？因为它一到就结束了，没有「之后」，所以不记 Q 值，只记奖励。</p>
+
+<div class="lab">
+  <h4>看一眼这张表怎么长得像一张地图</h4>
+  <p class="hint">这是训练 200 回合后真实跑出来的策略，每个格子标着它现在最想走的方向和对应分数。</p>
+  <div id="qgrid" style="display:grid; grid-template-columns:repeat(5, 1fr); gap:5px; max-width:360px;"></div>
+  <p class="hint" style="margin:10px 0 0;">坑那格是死路（红色），右下角是终点（绿色）。从左上角顺着箭头能走到终点。
+    但也要注意：有几个格子的箭头还指着墙，分数是负的——练 200 回合还不够，这正是第 4 章那行公式要继续做的事。</p>
+</div>
+
+<div class="check">
+  <div class="q">起点往右走，这一步环境只给 −0.1 分。为什么它的 Q 值会是正的 6.38？</div>
+  <button onclick="this.parentNode.classList.toggle('open')">看答案</button>
+  <div class="a">因为 Q 值记的是「从这一步开始，一直到结束，总共能拿多少分」，不是「这一步拿了多少分」。<br><br>−0.1 是这一脚的成本，后面一路走到终点会拿到 +10。把中间每一步的成本和最后的奖励加起来，大约就是 6.38。所以 Q 值是负数不一定坏，正数也不一定是好事——它只是在描述「这条路值不值」。</div>
+</div>
+
+<!-- ══════════════ 4 ══════════════ -->
+<h2 id="c4"><span class="num">第 4 章</span>那行公式：怎么把经验写进表里</h2>
+
+<p class="lead"><b>这一章只讲一件事：</b>整个强化学习最小的那颗心脏，只有一行。</p>
+
+<p>表是空的。鸭子走了一步，环境给了分数。现在怎么用这次经验去改表里的数？</p>
+
+<pre><code>Q ← Q + α × (目标 − Q)</code></pre>
+
+<p>这行字念出来是这样：</p>
+
+<p><strong>新分数 = 老分数 + 学习率 × （这次算出来的更准的答案 − 老分数）</strong></p>
+
+<p>把它想成「我以为」和「实际发现」的差距。老分数是「我以为这条路值多少」，目标是我走完这一步之后算出的「实际值多少」。两者差多少，我就往那边挪一点点。挪多少，由 α 决定。</p>
+
+<p>为什么要「挪一点点」，而不是直接改成目标？因为<em>一次经验可能是运气</em>。这次刚好走到终点，不代表这个方向一定好。少量多次地改，噪声会互相抵消。</p>
+
+<h3>手算两次，你就懂了</h3>
+
+<p>第一次走：从 (0,0) 往右，走到 (0,1)，环境给 −0.1 分。因为 (0,1) 那格当时也全是 0，所以「目标」就是 −0.1。</p>
+
+<pre><code>Q = 0 + 0.2 × (−0.1 − 0) = −0.02</code></pre>
+
+<p>记下 −0.02。少得可怜，几乎没变。</p>
+
+<p>后来它又走过很多次，(0,1) 那格往右的分数涨到了 6.82。这时再走一次同样的路，目标就变了：</p>
+
+<pre><code>目标 = −0.1 + 0.95 × 6.82 = 6.379
+Q   = −0.02 + 0.2 × (6.379 − (−0.02)) = 1.26</code></pre>
+
+<p>从 −0.02 跳到 1.26。还差得远，但方向对了。它需要被走几十次，才会慢慢爬到 6.38。</p>
+
+<div class="lab">
+  <h4>拖一拖 α，看它多快能追上目标</h4>
+  <p class="hint">目标已经算好了是 6.379，起点是 −0.02。每次点「再更新一次」，就等于它又走了一遍这条路。</p>
+  <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
+    <span style="font-size:12.5px; color:#5a6774; white-space:nowrap;">学习率 α</span>
+    <input id="alpha" type="range" min="0.05" max="1" step="0.05" value="0.2">
+    <span id="alpha-v" style="font-family:var(--mono); font-size:12px; width:38px; text-align:right;">0.20</span>
+  </div>
+  <div class="bar-outer">
+    <div class="bar-inner" id="qbar"></div>
+    <div class="bar-mark" id="qmark" style="left:100%;"></div>
+  </div>
+  <div class="readout"><span>Q = <b id="qval">−0.020</b></span><span>目标 6.379</span></div>
+  <div class="formula" id="qformula">还没更新过。点下面的按钮试试。</div>
+  <div style="display:flex; gap:8px; margin-top:12px;">
+    <button class="primary" id="qstep">再更新一次</button>
+    <button id="qreset">重来</button>
+  </div>
+</div>
+
+<p>多试几次你会发现：α 小的时候，要按很多次才接近目标；α 大的时候两三次就到了，但它也更容易被一次偶然的经验带偏。真实训练里 α 通常在 0.001 到 0.0003 之间，比这里小得多——因为真实的经验量大得多。</p>
+
+<div class="check">
+  <div class="q">如果 α 设成 1，会发生什么？</div>
+  <button onclick="this.parentNode.classList.toggle('open')">看答案</button>
+  <div class="a">每次更新直接等于目标：<code>Q = 目标</code>。<br><br>好处是学得极快。坏处是它完全相信最近一次经验：如果这次是运气好蹭到了终点，Q 值会猛地跳到很高，下一次再遇到相反的情况又猛地掉下来。表现出来就是训练曲线剧烈震荡，学不到稳定的策略。</div>
+</div>
+
+<!-- ══════════════ 5 ══════════════ -->
+<h2 id="c5"><span class="num">第 5 章</span>两个必要的「不理性」：探索和折扣</h2>
+
+<p class="lead"><b>这一章只讲一件事：</b>为什么它必须偶尔做点傻事，以及为什么远处的奖励要打折。</p>
+
+<h3>探索：一直选最好的，会永远停在原地</h3>
+
+<p>假设开局时它试了一次「往右」，发现能吃 6 分。从那以后，它每次都往右走。</p>
+
+<p>问题来了：它再也不会去试「往下」。而下可能更好——它永远不会知道。</p>
+
+<p>这就是「探索与利用」的矛盾。解决办法很土：<em>每次做决定之前，先掷个骰子，有 ε 的概率不管三七二十一随便走一步。</em></p>
+
+<p>ε = 0.2 的意思是：五次决定里，大约有一次是瞎走的。剩下四次按表里的最优来。</p>
+
+<div class="lab">
+  <h4>点一下，掷 20 次骰子</h4>
+  <p class="hint">深橙色 = 这次瞎走（探索），灰色 = 这次听表的（利用）。ε = 0.2 时，20 次里平均 4 次探索。</p>
+  <div class="dots" id="dots"></div>
+  <div class="readout" style="margin-bottom:10px;"><span id="dotinfo">还没掷</span><span>ε = 0.2</span></div>
+  <div style="display:flex; gap:8px;">
+    <button class="primary" id="roll">掷 20 次</button>
+    <button id="rollmany">掷 200 次</button>
+  </div>
+  <div class="formula" id="rollout">探索率太低，它会卡在一条不好不坏的路上；太高，它学到的经验全是乱走的垃圾。</div>
+</div>
+
+<p>所以训练末期通常会把这个 ε 慢慢调小：先到处乱撞，再稳稳走好路。把 ε 从 0.2 调到 0，同样练 200 回合，平均回报从 <strong>6.48 涨到 9.30</strong>——因为最后它不再花步数乱走了。<br>
+<span style="font-size:13px;color:var(--ink-faint)">（你在网页调试器里看到的数字会略有出入，两边用的随机数实现不一样，趋势相同。）</span></p>
+
+<h3>折扣：十步之后的 10 分，不如现在的 10 分</h3>
+
+<p>目标里有个 0.95 的系数，叫折扣因子 γ。它的作用是：<em>每往后退一步，奖励就打个折。</em></p>
+
+<pre><code>γ = 0.95    →   10 步之后的 10 分，只算 10 × 0.95¹⁰ ≈ 5.99 分
+γ = 0.95    →   30 步之后的 10 分，只算 10 × 0.95³⁰ ≈ 2.15 分</code></pre>
+
+<p>为什么要打折？两个原因。一，越远的预测越不准，现在这 6 毛钱比十步后的 1 块钱靠谱。二，早期训练时它经常走不到终点，如果不打折，所有路径的分数都差不多，它分不出哪条更短。</p>
+
+<p>打折还有一个副作用，很值得知道：它让「先靠近终点」比「直接冲终点」更容易学到。因为靠近终点的那一步，折扣损失小，分数上升得明显，程序能立刻感觉到「我刚才做对了」。</p>
+
+<div class="check">
+  <div class="q">γ 设成 0.5 会怎样？设成 1 又会怎样？</div>
+  <button onclick="this.parentNode.classList.toggle('open')">看答案</button>
+  <div class="a"><b>γ = 0.5</b>：它几乎只在乎眼前这一步。表现出来是贪心、短视：愿意为了眼前多 1 分而走进死路。<br><br><b>γ = 1</b>：所有未来的分数都按原价算。听起来很合理，但训练会变难：一条 50 步的路和一条 5 步的路在它眼里差距很小，学习信号被稀释。而且如果任务没有终止（一直走下去），回报会无限大，数学上直接崩。<br><br>常用值是 0.95 到 0.99。</div>
+</div>
+
+<!-- ══════════════ 6 ══════════════ -->
+<h2 id="c6"><span class="num">第 6 章</span>表格装不下的时候</h2>
+
+<p class="lead"><b>这一章只讲一件事：</b>为什么鸭子不能用 Q 表，以及神经网络在这里替代了什么。</p>
+
+<p>格子里只有 25 个位置，所以能用一张 100 个数的表。鸭子不行，我们来算一下为什么。</p>
+
+<p>鸭子的状态是 36 个数，每个数都是连续变化的。假设我们偷个懒，把每个数只切成 10 档（精度很粗糙了），那么所有可能的状态是：</p>
+
+<div class="lab">
+  <h4>表格要多大</h4>
+  <p class="hint">拖一下，感受「维度」这个词到底意味着什么。</p>
+  <div style="display:flex; align-items:center; gap:10px;">
+    <span style="font-size:12.5px; color:#5a6774; white-space:nowrap; width:52px;">状态维度</span>
+    <input id="dim" type="range" min="2" max="40" step="1" value="36">
+    <span id="dim-v" style="font-family:var(--mono); font-size:12px; width:30px; text-align:right;">36</span>
+  </div>
+  <div style="margin-top:12px;">
+    <div class="big-number" id="rows">10^36</div>
+    <p class="hint" style="margin:6px 0 0;" id="rows-note"></p>
+  </div>
+</div>
+
+<p>10 的 36 次方行。这个数字没法用：就算一行只存一个字节，需要的硬盘比地球上所有硬盘加起来还多几个数量级。</p>
+
+<p>所以换成另一种记法：<em>不记账，学一个函数。</em></p>
+
+<p>给它 36 个数，它输出 14 个数。中间那几万个参数就是它的「经验」。这套东西叫神经网络。</p>
+
+<table>
+  <thead><tr><th style="width:150px"></th><th>Q 表</th><th>神经网络</th></tr></thead>
+  <tbody>
+    <tr><td>存什么</td><td>每个状态每个动作一个数</td><td>几万个参数，没有一条能对应到某个具体状态</td></tr>
+    <tr><td>能装多少状态</td><td>写完为止</td><td>装不完，但它能「举一反三」</td></tr>
+    <tr><td>没见过的状态</td><td>查不到，只能当 0</td><td>给一个相近的答案</td></tr>
+    <tr><td>可信度</td><td>查到的就是真的</td><td>永远是估计，可能错得很离谱</td></tr>
+  </tbody>
+</table>
+
+<p>第三行是它值钱的地方。机器人永远会遇到没见过的姿态，因为角度是连续的，你不可能把所有姿态都试一遍。它需要的正是「没见过也能给个合理反应」的能力。</p>
+
+<p>这也是为什么这类方法叫「深度强化学习」——「深度」指的是那个神经网络有很多层，跟学习本身没关系。</p>
+
+<div class="check">
+  <div class="q">神经网络「举一反三」的能力，在机器人上为什么特别重要？</div>
+  <button onclick="this.parentNode.classList.toggle('open')">看答案</button>
+  <div class="a">因为真实世界的姿态是连续的、无穷多的。训练时它只见过有限的那些，真机运行时一定遇到没见过的角度。<br><br>如果靠查表，没见过的状态它只能瞎猜；神经网络会把新状态归到它见过的相近情况上，给出一个大致合理的动作。这个能力叫泛化。</div>
+</div>
+
+<!-- ══════════════ 7 ══════════════ -->
+<h2 id="c7"><span class="num">第 7 章</span>真跑起来是什么样子</h2>
+
+<p class="lead"><b>这一章只讲一件事：</b>知道这些概念之后，一个真实的训练过程长什么样，以及怎么看它有没有骗你。</p>
+
+<h3>先说工程上的四件事</h3>
+
+<p>真正训练的时候，代码里大部分篇幅不在算法上，在这四件事上：</p>
+
+<div class="cols2">
+  <div class="box"><h5>并行环境</h5><p>同时开 4 个、8 个模拟器一起采数据。物理模拟慢，不等它。</p></div>
+  <div class="box"><h5>观测归一化</h5><p>关节角是 0.8，高度是 0.12，数量级差太多，网络会学偏。先统一尺度。</p></div>
+  <div class="box"><h5>中途存盘</h5><p>训练 8 分钟不算长，训 8 小时就必须能断点续训。</p></div>
+  <div class="box"><h5>定期评估</h5><p>训练曲线是训练集的表现，必须另外开一局考试。</p></div>
+</div>
+
+<h3>你的鸭子实测</h3>
+
+<table>
+  <thead><tr><th style="width:130px">项目</th><th>数值</th></tr></thead>
+  <tbody>
+    <tr><td>总训练步数</td><td>100 万步（每步 20 毫秒，相当于 5.5 小时的真实时间）</td></tr>
+    <tr><td>耗时</td><td>8 分钟（M3 Pro，纯 CPU）</td></tr>
+    <tr><td>基线</td><td>一动不动：47 步就倒</td></tr>
+    <tr><td>训练后</td><td>撑满 500 步（10 秒），最后 350 个回合平均满分</td></tr>
+    <tr><td>转折点</td><td>前 1400 个回合完全没动静，第 1500 回合开始往上爬</td></tr>
+  </tbody>
+</table>
+
+<p>那个「前 1500 回合没动静」值得单独说。它在这段平地上慢慢积累：随机乱动时偶尔站稳了一次，这次经验进了网络，下一次稍微好一点，好一点又多站两秒，滚雪球要到某个临界点才看得见。多数人在这段平地上放弃。</p>
+
+<h3>一个真实的陷阱：奖励写歪了，曲线照样满分</h3>
+
+<p>第一次训练完，考试全是满分。我把模型放进网页里跑，看到的是一只<em>拿脑袋撑在地上</em>的鸭子。</p>
+
+<p>原因是我算「站得直」时读错了索引：躯干姿态那一项永远是 1.0，等于没起作用。它很快就找到了空子——只要躯干高度不跌破 6 厘米，分数照拿，用脑袋顶着最省力。</p>
+
+<pre><code>写错的那一版：训练曲线满分，鸭子趴着
+改对之后重训：500 步满分，躯干稳定在 11.5–11.8cm，真的站着</code></pre>
+
+<p>同一套代码，只差一个索引。所以记住这句话：<em>训练曲线告诉你它得了多少分，不告诉你它用的是什么姿势得的分。</em></p>
+
+<div class="check">
+  <div class="q">如果只看训练曲线，你会得出什么错误结论？</div>
+  <button onclick="this.parentNode.classList.toggle('open')">看答案</button>
+  <div class="a">你会以为它已经完美了，然后直接拿去部署，然后在真机上发现它一推就倒。<br><br>曲线只反映「训练时的平均表现」。要看三件事才算数：换初始条件的成功率、确定性执行的表现、以及最差的那一次有多差。</div>
+</div>
+
+<!-- ══════════════ 8 ══════════════ -->
+<h2 id="c8"><span class="num">第 8 章</span>自测十题</h2>
+
+<p class="lead"><b>这一章没有新内容。</b>能答对八题，这本书就算读完了。</p>
+
+<div id="quiz"></div>
+
+<!-- ══════════════ 附录 ══════════════ -->
+<h2 id="app"><span class="num">附录 A</span>术语表</h2>
+
+<p>英文术语按出现频率排序。左边是你会在论文和代码里看到的样子。</p>
+
+<table>
+  <thead><tr><th style="width:170px">英文</th><th style="width:120px">中文</th><th>一句话解释</th></tr></thead>
+  <tbody>
+    <tr><td class="k">reinforcement learning</td><td>强化学习</td><td>靠试错和打分来学，不需要标准答案</td></tr>
+    <tr><td class="k">agent</td><td>智能体</td><td>那个在做决定的程序。在你的例子里是那只鸭子</td></tr>
+    <tr><td class="k">environment</td><td>环境</td><td>被操作的世界，负责推进状态和给分</td></tr>
+    <tr><td class="k">state / observation</td><td>状态 / 观测</td><td>它能感知到的数字。观测通常指它「看得到的那部分」</td></tr>
+    <tr><td class="k">action</td><td>动作</td><td>它能做的选择</td></tr>
+    <tr><td class="k">reward</td><td>奖励</td><td>做完之后立刻拿到的分</td></tr>
+    <tr><td class="k">return</td><td>回报</td><td>往后所有奖励打折加起来的总分</td></tr>
+    <tr><td class="k">policy</td><td>策略</td><td>从状态到动作的那个函数，就是最终要学到的东西</td></tr>
+    <tr><td class="k">episode</td><td>回合</td><td>从开局到结束的一段</td></tr>
+    <tr><td class="k">discount factor γ</td><td>折扣因子</td><td>远处的奖励打几折</td></tr>
+    <tr><td class="k">exploration / exploitation</td><td>探索 / 利用</td><td>瞎走试试新路 / 走当前认为最好的路</td></tr>
+    <tr><td class="k">Q value</td><td>Q 值</td><td>「在这个状态做这个动作，往后大概能拿多少分」的估计</td></tr>
+    <tr><td class="k">Q-learning</td><td>Q 学习</td><td>最基础的算法，用一张表记 Q 值</td></tr>
+    <tr><td class="k">policy gradient</td><td>策略梯度</td><td>不用表，直接调策略函数的参数，让好动作更常出现</td></tr>
+    <tr><td class="k">PPO</td><td>近端策略优化</td><td>最常用的策略梯度算法，稳定、好调。你的鸭子用它训的</td></tr>
+    <tr><td class="k">sim-to-real gap</td><td>仿真到现实的差距</td><td>模拟器里学到的策略，搬到真机上不灵</td></tr>
+    <tr><td class="k">domain randomization</td><td>域随机化</td><td>训练时故意随机化摩擦、质量、延迟，让策略更抗造</td></tr>
+    <tr><td class="k">reward hacking</td><td>奖励被钻空子</td><td>它找到了刷分的歪门，而不是把事做好</td></tr>
+  </tbody>
+</table>
+
+<h2 id="run"><span class="num">附录 B</span>怎么动手</h2>
+
+<p>这本书只要求你读。想真的跑一遍，按下面顺序来，每一步都能看到结果。</p>
+
+<table>
+  <thead><tr><th style="width:200px">做什么</th><th>怎么跑</th><th>大概耗时</th></tr></thead>
+  <tbody>
+    <tr><td>看 Q 表怎么被改写</td><td>打开 <code>rl-lab/stepper.html</code>，点「下一步」</td><td>随便玩</td></tr>
+    <tr><td>跑第一个算法</td><td><code>python3 rl-lab/01_gridworld_qlearning.py</code></td><td>1 秒</td></tr>
+    <tr><td>跑神经网络版</td><td><code>cd rl-lab && .venv/bin/python 02_cartpole_pg.py</code></td><td>25 秒</td></tr>
+    <tr><td>把鸭子接成环境</td><td><code>.venv/bin/python 03_microduck_env.py</code></td><td>3 秒</td></tr>
+    <tr><td>训练鸭子站立</td><td><code>.venv/bin/python 04_train_duck.py --steps 1000000</code></td><td>8 分钟</td></tr>
+    <tr><td>考试</td><td><code>.venv/bin/python 05_eval_duck.py</code></td><td>10 秒</td></tr>
+  </tbody>
+</table>
+
+<p>前三步不需要 GPU，最后两步在这台 M3 上纯 CPU 就能跑完。全部离线，不联网。</p>
+
+<div class="end-note">
+  <b>读完之后，你应该能说清这三件事：</b><br>
+  一、为什么鸭子的站立必须靠一个持续输出的策略，而不能靠摆姿势。<br>
+  二、Q 表记的是「往后的总分」，所以它和「这一步的奖励」经常不是一回事。<br>
+  三、训练曲线满分只说明训练时的表现，要判断学会了没有，得换初始条件再考一遍。
+</div>
+
+</article>
+</div>
+
+<script>
+/* ── 第 3 章：策略小地图（训练 200 回合后的真实数据） ── */
+(function () {
+  const R = 5, C = 5, PIT = [2, 2], GOAL = [4, 4];
+  const vals = [
+    [4.27, 2.98, 3.69, 6.38], [5.01, 6.82, 5.24, 3.02], [0.71, 1.35, -0.15, 6.63], [2.14, 7.70, -0.09, 0.30], [-0.20, 4.19, -0.09, -0.36],
+    [5.48, -0.20, -0.55, -0.20], [5.62, 0.88, 2.35, 7.29], [4.22, -9.14, 4.15, 7.77], [4.50, 8.29, 6.62, 5.52], [0.71, 8.61, 1.52, -0.37],
+    [-0.15, -0.02, -0.53, -0.14], [-0.12, 2.52, -0.14, -4.88], [0, 0, 0, 0], [6.50, 5.83, -8.93, 8.83], [5.55, 9.40, 5.56, 7.18],
+    [-0.09, -0.09, -0.33, 0.52], [-0.07, -0.05, -0.05, 4.83], [-4.88, 7.20, 0, 1.53], [-0.02, 9.22, 1.83, 1.86], [7.03, 10.00, 6.68, 7.74],
+    [-0.09, -0.36, -0.36, -0.06], [-0.04, -0.21, -0.04, 2.16], [2.05, 0.70, 0.12, 8.84], [2.90, 1.70, 1.51, 10.00], [0, 0, 0, 0]
+  ];
+  const ARROW = ["↑", "↓", "←", "→"];
+  const el = document.getElementById("qgrid");
+  for (let r = 0; r < R; r++) {
+    for (let c = 0; c < C; c++) {
+      const i = r * C + c;
+      const d = document.createElement("div");
+      const isPit = PIT[0] === r && PIT[1] === c;
+      const isGoal = GOAL[0] === r && GOAL[1] === c;
+      d.style.cssText = "aspect-ratio:1;border:1px solid #eef1f5;border-radius:8px;background:#fbfcfd;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:var(--mono);";
+      if (isPit) {
+        d.style.cssText += "background:#fbeceb;border-color:#f6d6d2;";
+        d.innerHTML = '<span style="color:#b8412f;font-size:17px;">×</span><span style="font-size:9px;color:#b8412f;">−10</span>';
+      } else if (isGoal) {
+        d.style.cssText += "background:#eaf5f0;border-color:#cfe9df;";
+        d.innerHTML = '<span style="color:#1f7a60;font-size:15px;">●</span><span style="font-size:9px;color:#1f7a60;">+10</span>';
+      } else {
+        const a = vals[i];
+        let k = 0;
+        for (let j = 1; j < 4; j++) if (a[j] > a[k]) k = j;
+        d.innerHTML = `<span style="font-size:19px;color:${a[k] >= 0 ? "#1f7a60" : "#b8412f"}">${ARROW[k]}</span>
+          <span style="font-size:9px;color:#8894a1">${a[k].toFixed(2)}</span>`;
+      }
+      el.appendChild(d);
+    }
+  }
+})();
+
+/* ── 第 4 章：α 学习率交互 ── */
+(function () {
+  const TARGET = 6.379, START = -0.02;
+  let q = START, clicks = 0;
+  const bar = document.getElementById("qbar");
+  const qv = document.getElementById("qval");
+  const fm = document.getElementById("qformula");
+  const alpha = document.getElementById("alpha");
+  const alphaV = document.getElementById("alpha-v");
+
+  const draw = () => {
+    const pct = Math.max(0, Math.min(1, (q - START) / (TARGET - START)));
+    bar.style.width = (pct * 100) + "%";
+    qv.textContent = q.toFixed(3);
+  };
+
+  document.getElementById("qstep").onclick = () => {
+    const a = parseFloat(alpha.value);
+    const old = q;
+    q = old + a * (TARGET - old);
+    clicks += 1;
+    fm.textContent =
+      `第 ${clicks} 次：Q = ${old.toFixed(3)} + ${a.toFixed(2)} × (${TARGET.toFixed(3)} − (${old.toFixed(3)}))\n` +
+      `        = ${q.toFixed(3)}` + (clicks > 12 ? "\n\n（按这么多次已经很接近了。α 大就是追得快。）" : "");
+    draw();
+  };
+
+  document.getElementById("qreset").onclick = () => {
+    q = START; clicks = 0;
+    fm.textContent = "还没更新过。点下面的按钮试试。";
+    draw();
+  };
+
+  alpha.oninput = () => {
+    alphaV.textContent = parseFloat(alpha.value).toFixed(2);
+  };
+
+  draw();
+})();
+
+/* ── 第 5 章：ε 探索骰子 ── */
+(function () {
+  const dots = document.getElementById("dots");
+  const info = document.getElementById("dotinfo");
+  document.getElementById("roll").onclick = () => rollDice(20);
+  document.getElementById("rollmany").onclick = () => rollDice(200);
+
+  let cumN = 0, cumE = 0;
+
+  function rollDice(n) {
+    dots.innerHTML = "";
+    let explore = 0;
+    const show = Math.min(n, 40);
+    for (let i = 0; i < n; i++) {
+      const isExplore = Math.random() < 0.2;
+      if (isExplore) explore += 1;
+      if (i < show) {
+        const d = document.createElement("div");
+        d.className = "dot " + (isExplore ? "explore" : "use");
+        dots.appendChild(d);
+      }
+    }
+    if (n > show) {
+      const more = document.createElement("div");
+      more.style.cssText = "font-size:11.5px;color:#8894a1;align-self:center;margin-left:6px;";
+      more.textContent = `（另有 ${n - show} 次没画出来）`;
+      dots.appendChild(more);
+    }
+    cumN += n; cumE += explore;
+    info.innerHTML = `这一批 ${n} 次里探索了 ${explore} 次（${(explore / n * 100).toFixed(0)}%）
+      <span style="color:#b8c0ca">·</span> 累计 ${cumN} 次里 ${cumE} 次（${(cumE / cumN * 100).toFixed(1)}%）`;
+  }
+})();
+
+/* ── 第 6 章：状态维度计算器 ── */
+(function () {
+  const dim = document.getElementById("dim");
+  const rows = document.getElementById("rows");
+  const note = document.getElementById("rows-note");
+  const dimV = document.getElementById("dim-v");
+
+  function render() {
+    const d = parseInt(dim.value, 10);
+    dimV.textContent = d;
+    const exp = d * Math.log10(10);
+    rows.textContent = `10^${d}`;
+    let msg;
+    if (d <= 4) msg = "这个规模还能用表格。格子世界就是这种量级。";
+    else if (d <= 8) msg = "已经不太实用了，但理论上还能存。";
+    else if (d <= 20) msg = "地球上所有硬盘加起来也存不下，只能改用神经网络。";
+    else msg = "这个数量级没法描述，宇宙里的原子数大约是 10^80。";
+    note.textContent = msg;
+  }
+  dim.oninput = render;
+  render();
+})();
+
+/* ── 第 8 章：自测十题 ── */
+(function () {
+  const QS = [
+    ["鸭子的「状态」是 36 个数。为什么不能像格子世界那样，用一张表把每个状态都记下来？",
+     "因为状态是连续值，组合起来接近无穷。就算每个数只切 10 档，36 维也有 10 的 36 次方种组合，存不下。"],
+    ["Q 值记的是「这一步的奖励」还是「往后的总分」？",
+     "往后的总分（回报）。所以往右走一步只拿 −0.1 分，Q 值却可能是正的 6.38。"],
+    ["为什么必须保留「随机瞎走」这个动作（ε）？",
+     "否则它会一直重复当前认为最好的动作，永远发现不了别的路可能更好。探索是用短期的笨换取长期的准。"],
+    ["公式 Q ← Q + α × (目标 − Q) 里，为什么要乘一个 α，而不直接等于目标？",
+     "因为单次经验可能是运气。只挪一部分，多次平均下来才接近真实值。"],
+    ["γ 折扣因子调小，策略会变成什么样？",
+     "变得短视：更在乎眼前这一步的分数，愿意为小利走进死路。"],
+    ["「训练曲线满分」为什么不能证明它学会了？",
+     "曲线只是训练时的平均表现。换个初始条件、换成确定性执行，可能立刻垮掉。要另外开一局考试。"],
+    ["PPO 和 Q-learning 的根本区别在哪？",
+     "Q-learning 用表记「每个状态每个动作值多少分」，PPO 直接调策略函数的参数，让好动作更常出现。后者能处理连续动作和巨大状态空间。"],
+    ["你的鸭子在模拟器里能站 10 秒，搬到真机上为什么可能立刻倒？",
+     "sim-to-real gap：真机的摩擦、舵机间隙、电池电压、控制延迟都和模拟器不一样。训练时随机化这些参数（域随机化）能缓解。"],
+    ["奖励写成「活着 +1，站直再 +0.5，动作大扣分」。如果把「活着 +1」删掉会怎样？",
+     "它会学会就地躺平：躺着也能拿到「站直」那部分分数的一部分，还省力气，不用辛苦维持平衡。"],
+    ["训练 100 万步用了 8 分钟，这算快还是慢？",
+     "对 14 个自由度的双足机器人来说算快，因为物理模拟在 CPU 上很快。但 100 万步只换来「勉强站住」，离「抗推、走、跑」还很远——算力换性能这件事没有终点。"]
+  ];
+  const box = document.getElementById("quiz");
+  QS.forEach(([q, a], i) => {
+    const d = document.createElement("div");
+    d.className = "check";
+    d.style.marginTop = "12px";
+    d.innerHTML = `<div class="q">${i + 1}. ${q}</div>
+      <button onclick="this.parentNode.classList.toggle('open')">看答案</button>
+      <div class="a">${a}</div>`;
+    box.appendChild(d);
+  });
+})();
+</script>
+
+</body>
+</html>

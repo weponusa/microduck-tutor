@@ -1,0 +1,352 @@
+[
+ {
+  "name": "body:trunk_base/geom:1",
+  "body": "trunk_base",
+  "geom": "geom1"
+ },
+ {
+  "name": "body:trunk_base/geom:2",
+  "body": "trunk_base",
+  "geom": "geom2"
+ },
+ {
+  "name": "body:trunk_base/geom:3",
+  "body": "trunk_base",
+  "geom": "geom3"
+ },
+ {
+  "name": "body:trunk_base/geom:4",
+  "body": "trunk_base",
+  "geom": "geom4"
+ },
+ {
+  "name": "body:trunk_base/geom:5",
+  "body": "trunk_base",
+  "geom": "geom5"
+ },
+ {
+  "name": "body:trunk_base/geom:6",
+  "body": "trunk_base",
+  "geom": "geom6"
+ },
+ {
+  "name": "body:trunk_base/geom:8",
+  "body": "trunk_base",
+  "geom": "geom8"
+ },
+ {
+  "name": "body:trunk_base/geom:10",
+  "body": "trunk_base",
+  "geom": "geom10"
+ },
+ {
+  "name": "body:trunk_base/geom:11",
+  "body": "trunk_base",
+  "geom": "geom11"
+ },
+ {
+  "name": "body:trunk_base/geom:12",
+  "body": "trunk_base",
+  "geom": "geom12"
+ },
+ {
+  "name": "body:yaw2roll/geom:13",
+  "body": "yaw2roll",
+  "geom": "geom13"
+ },
+ {
+  "name": "body:yaw2roll/geom:14",
+  "body": "yaw2roll",
+  "geom": "geom14"
+ },
+ {
+  "name": "body:yaw2roll/geom:15",
+  "body": "yaw2roll",
+  "geom": "geom15"
+ },
+ {
+  "name": "body:yaw2roll/geom:16",
+  "body": "yaw2roll",
+  "geom": "geom16"
+ },
+ {
+  "name": "body:hip_l/geom:17",
+  "body": "hip_l",
+  "geom": "geom17"
+ },
+ {
+  "name": "body:hip_l/geom:18",
+  "body": "hip_l",
+  "geom": "geom18"
+ },
+ {
+  "name": "body:upper_leg_left/geom:20",
+  "body": "upper_leg_left",
+  "geom": "geom20"
+ },
+ {
+  "name": "body:upper_leg_left/geom:21",
+  "body": "upper_leg_left",
+  "geom": "geom21"
+ },
+ {
+  "name": "body:upper_leg_left/geom:22",
+  "body": "upper_leg_left",
+  "geom": "geom22"
+ },
+ {
+  "name": "body:upper_leg_left/geom:23",
+  "body": "upper_leg_left",
+  "geom": "geom23"
+ },
+ {
+  "name": "body:upper_leg_left/geom:24",
+  "body": "upper_leg_left",
+  "geom": "geom24"
+ },
+ {
+  "name": "body:leg/geom:25",
+  "body": "leg",
+  "geom": "geom25"
+ },
+ {
+  "name": "body:leg/geom:27",
+  "body": "leg",
+  "geom": "geom27"
+ },
+ {
+  "name": "body:ankle_left/geom:28",
+  "body": "ankle_left",
+  "geom": "geom28"
+ },
+ {
+  "name": "body:ankle_left/geom:30",
+  "body": "ankle_left",
+  "geom": "geom30"
+ },
+ {
+  "name": "body:ankle_left/geom:31",
+  "body": "ankle_left",
+  "geom": "geom31"
+ },
+ {
+  "name": "body:ankle_left/geom:32",
+  "body": "ankle_left",
+  "geom": "geom32"
+ },
+ {
+  "name": "body:neck/geom:33",
+  "body": "neck",
+  "geom": "geom33"
+ },
+ {
+  "name": "body:neck/geom:34",
+  "body": "neck",
+  "geom": "geom34"
+ },
+ {
+  "name": "body:neck/geom:35",
+  "body": "neck",
+  "geom": "geom35"
+ },
+ {
+  "name": "body:neck/geom:36",
+  "body": "neck",
+  "geom": "geom36"
+ },
+ {
+  "name": "body:neck_pitch/geom:37",
+  "body": "neck_pitch",
+  "geom": "geom37"
+ },
+ {
+  "name": "body:neck_pitch/geom:38",
+  "body": "neck_pitch",
+  "geom": "geom38"
+ },
+ {
+  "name": "body:yaw_roll_motion/geom:39",
+  "body": "yaw_roll_motion",
+  "geom": "geom39"
+ },
+ {
+  "name": "body:yaw_roll_motion/geom:40",
+  "body": "yaw_roll_motion",
+  "geom": "geom40"
+ },
+ {
+  "name": "body:yaw_roll_motion/geom:41",
+  "body": "yaw_roll_motion",
+  "geom": "geom41"
+ },
+ {
+  "name": "body:yaw_roll_motion/geom:42",
+  "body": "yaw_roll_motion",
+  "geom": "geom42"
+ },
+ {
+  "name": "body:jaw_soft/geom:43",
+  "body": "jaw_soft",
+  "geom": "geom43"
+ },
+ {
+  "name": "body:jaw_soft/geom:44",
+  "body": "jaw_soft",
+  "geom": "geom44"
+ },
+ {
+  "name": "body:jaw_soft/geom:45",
+  "body": "jaw_soft",
+  "geom": "geom45"
+ },
+ {
+  "name": "body:jaw_soft/geom:46",
+  "body": "jaw_soft",
+  "geom": "geom46"
+ },
+ {
+  "name": "body:jaw_soft/geom:47",
+  "body": "jaw_soft",
+  "geom": "geom47"
+ },
+ {
+  "name": "body:jaw_soft/geom:48",
+  "body": "jaw_soft",
+  "geom": "geom48"
+ },
+ {
+  "name": "body:jaw_soft/geom:50",
+  "body": "jaw_soft",
+  "geom": "geom50"
+ },
+ {
+  "name": "body:jaw_soft/geom:51",
+  "body": "jaw_soft",
+  "geom": "geom51"
+ },
+ {
+  "name": "body:jaw_soft/geom:52",
+  "body": "jaw_soft",
+  "geom": "geom52"
+ },
+ {
+  "name": "body:jaw_soft/geom:53",
+  "body": "jaw_soft",
+  "geom": "geom53"
+ },
+ {
+  "name": "body:jaw_soft/geom:54",
+  "body": "jaw_soft",
+  "geom": "geom54"
+ },
+ {
+  "name": "body:jaw_soft/geom:55",
+  "body": "jaw_soft",
+  "geom": "geom55"
+ },
+ {
+  "name": "body:jaw_soft/geom:57",
+  "body": "jaw_soft",
+  "geom": "geom57"
+ },
+ {
+  "name": "body:jaw_soft/geom:59",
+  "body": "jaw_soft",
+  "geom": "geom59"
+ },
+ {
+  "name": "body:jaw_soft/geom:60",
+  "body": "jaw_soft",
+  "geom": "geom60"
+ },
+ {
+  "name": "body:jaw_soft/geom:61",
+  "body": "jaw_soft",
+  "geom": "geom61"
+ },
+ {
+  "name": "body:bearing_roll/geom:62",
+  "body": "bearing_roll",
+  "geom": "geom62"
+ },
+ {
+  "name": "body:bearing_roll/geom:63",
+  "body": "bearing_roll",
+  "geom": "geom63"
+ },
+ {
+  "name": "body:bearing_roll/geom:64",
+  "body": "bearing_roll",
+  "geom": "geom64"
+ },
+ {
+  "name": "body:bearing_roll/geom:65",
+  "body": "bearing_roll",
+  "geom": "geom65"
+ },
+ {
+  "name": "body:hip_l_2/geom:66",
+  "body": "hip_l_2",
+  "geom": "geom66"
+ },
+ {
+  "name": "body:hip_l_2/geom:68",
+  "body": "hip_l_2",
+  "geom": "geom68"
+ },
+ {
+  "name": "body:upper_leg_right/geom:69",
+  "body": "upper_leg_right",
+  "geom": "geom69"
+ },
+ {
+  "name": "body:upper_leg_right/geom:70",
+  "body": "upper_leg_right",
+  "geom": "geom70"
+ },
+ {
+  "name": "body:upper_leg_right/geom:71",
+  "body": "upper_leg_right",
+  "geom": "geom71"
+ },
+ {
+  "name": "body:upper_leg_right/geom:72",
+  "body": "upper_leg_right",
+  "geom": "geom72"
+ },
+ {
+  "name": "body:upper_leg_right/geom:73",
+  "body": "upper_leg_right",
+  "geom": "geom73"
+ },
+ {
+  "name": "body:leg_2/geom:74",
+  "body": "leg_2",
+  "geom": "geom74"
+ },
+ {
+  "name": "body:leg_2/geom:75",
+  "body": "leg_2",
+  "geom": "geom75"
+ },
+ {
+  "name": "body:ankle_right/geom:77",
+  "body": "ankle_right",
+  "geom": "geom77"
+ },
+ {
+  "name": "body:ankle_right/geom:78",
+  "body": "ankle_right",
+  "geom": "geom78"
+ },
+ {
+  "name": "body:ankle_right/geom:80",
+  "body": "ankle_right",
+  "geom": "geom80"
+ },
+ {
+  "name": "body:ankle_right/geom:81",
+  "body": "ankle_right",
+  "geom": "geom81"
+ }
+]

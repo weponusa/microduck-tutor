@@ -1,0 +1,2965 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>训练一只会站的鸭子 · 六关互动</title>
+<script type="importmap">
+{
+  "imports": {
+    "three": "../vendor/three/three.module.js",
+    "three/addons/": "../vendor/three/addons/"
+  }
+}
+</script>
+<style>
+  :root {
+    --ink: #18222d;
+    --ink-soft: #4e5b68;
+    --ink-faint: #8894a1;
+    --line: #e3e7ed;
+    --line-soft: #eef1f5;
+    --bg: #f6f7f9;
+    --card: #fff;
+    --accent: #d98324;
+    --accent-soft: #fdf4e8;
+    --accent-line: #f0d2a8;
+    --good: #1f7a60;
+    --good-soft: #eaf5f0;
+    --bad: #b8412f;
+    --bad-soft: #fbeeec;
+    --mono: "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: -apple-system, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    display: flex; flex-direction: column; height: 100vh; overflow: hidden;
+  }
+
+  .bar { flex: none; display: flex; align-items: center; gap: 16px; padding: 10px 22px;
+    background: var(--card); border-bottom: 1px solid var(--line); }
+  .bar .name { font-size: 14px; font-weight: 650; }
+  .bar .name span { color: var(--ink-faint); font-weight: 400; margin-left: 8px; font-size: 12px; }
+  .score { margin-left: auto; font-size: 12px; color: var(--ink-soft); font-family: var(--mono); }
+  .score b { color: var(--accent); font-size: 14px; }
+  .steps { display: flex; gap: 5px; }
+  .step-dot {
+    width: 27px; height: 27px; border-radius: 8px; display: grid; place-items: center;
+    font-family: var(--mono); font-size: 11px; color: var(--ink-faint);
+    background: #f4f6f8; border: 1px solid transparent; cursor: pointer; transition: all 0.15s;
+  }
+  .step-dot:hover { border-color: var(--line); }
+  .step-dot.on { background: var(--accent); color: #fff; font-weight: 600; }
+  .step-dot.done { background: var(--good-soft); color: var(--good); border-color: #cfe9df; }
+
+  main { flex: 1; min-height: 0; position: relative; }
+  .station { position: absolute; inset: 0; padding: 20px 28px 56px; overflow-y: auto; display: none; }
+  .station.on { display: flex; flex-direction: column; }
+  .station .inner { width: 100%; margin-top: auto; margin-bottom: auto; }
+  .inner { max-width: 1100px; margin: 0 auto; }
+
+  .mission {
+    display: flex; align-items: center; gap: 9px; flex-wrap: wrap;
+    padding: 8px 12px; border-radius: 10px; margin-bottom: 14px;
+    background: var(--accent-soft); border: 1px solid var(--accent-line);
+    font-size: 12.5px; color: #7a4f11;
+  }
+  .mission .tag {
+    font-size: 10px; letter-spacing: 1px; background: var(--accent); color: #fff;
+    padding: 2px 7px; border-radius: 5px;
+  }
+  .mission .state { margin-left: auto; font-family: var(--mono); font-size: 11.5px; }
+  .mission.ok { background: var(--good-soft); border-color: #cfe9df; color: #14614c; }
+  .mission.ok .tag { background: var(--good); }
+  .mission.ok .state { color: var(--good); }
+
+  h1 { font-size: 22px; margin: 0 0 5px; font-weight: 650; letter-spacing: -0.2px; }
+  .sub { font-size: 13px; color: var(--ink-faint); margin: 0 0 16px; }
+  p { font-size: 13.5px; line-height: 1.75; color: var(--ink-soft); margin: 0 0 10px; }
+  strong { color: var(--ink); font-weight: 650; }
+  em { font-style: normal; background: linear-gradient(transparent 62%, #fbe6c6 62%); padding: 0 2px; }
+
+  .split { display: grid; grid-template-columns: 392px minmax(0, 1fr); gap: 16px; align-items: start; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 13px; padding: 11px 13px; }
+  .card h4 { margin: 0 0 3px; font-size: 13px; font-weight: 650; }
+  .card .hint { font-size: 11.5px; color: var(--ink-faint); margin: 0 0 8px; line-height: 1.55; }
+
+  button {
+    font: inherit; font-size: 12.5px; padding: 7px 13px; border: 1px solid var(--line);
+    border-radius: 8px; background: #fff; color: var(--ink); cursor: pointer; transition: background 0.12s;
+  }
+  button:hover { background: #f6f8fa; }
+  button:disabled { opacity: 0.38; cursor: default; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+  button.primary:hover { background: #c8761c; }
+  .btnrow { display: flex; gap: 7px; flex-wrap: wrap; align-items: center; }
+
+  #grid { display: block; width: 100%; height: 222px; }
+
+  .dpad { display: grid; grid-template-columns: repeat(3, 40px); grid-template-rows: repeat(2, 30px);
+    gap: 5px; justify-content: center; margin: 8px 0 2px; }
+  .dpad button { padding: 0; font-size: 15px; font-family: var(--mono); }
+  .dpad .up { grid-column: 2; grid-row: 1; }
+  .dpad .left { grid-column: 1; grid-row: 2; }
+  .dpad .down { grid-column: 2; grid-row: 2; }
+  .dpad .right { grid-column: 3; grid-row: 2; }
+
+  .playrow { display: flex; gap: 12px; align-items: center; margin-top: 6px; }
+  #st2 .btnrow { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .race { display: flex; gap: 6px; flex: 1; min-width: 0; }
+  .race .racer { flex: 1; min-width: 0; }
+  .racer { border: 1px solid var(--line); border-radius: 9px; padding: 5px 9px; background: #fbfcfd; }
+  .racer i { font-style: normal; font-size: 10.5px; color: var(--ink-faint); display: block; }
+  .racer b { font-family: var(--mono); font-size: 16px; }
+  .racer em { display: block; font-style: normal; background: none; padding: 0; font-family: var(--mono); font-size: 11px; color: var(--ink-faint); margin-top: 1px; }
+  .racer.win { border-color: #cfe9df; background: var(--good-soft); }
+  .racer.win b { color: var(--good); }
+
+  .log { display: flex; flex-direction: column; gap: 4px; max-height: 98px; overflow: hidden; }
+  .log .row { font-size: 12px; line-height: 1.55; color: var(--ink-soft);
+    padding-bottom: 5px; border-bottom: 1px solid var(--line-soft); }
+  .log .row b { color: var(--ink); }
+  .log .empty { font-size: 12px; color: var(--ink-faint); }
+
+  .qmini { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-top: 8px; }
+  .qcell { border: 1px solid var(--line); border-radius: 7px; padding: 5px 3px; text-align: center;
+    font-family: var(--mono); font-size: 10.5px; color: var(--ink-soft); background: #fbfcfd; }
+  .qcell .dir { font-size: 11.5px; color: var(--ink-faint); display: block; font-family: -apple-system, sans-serif; }
+  .qcell .num { font-size: 12.5px; color: var(--ink); font-weight: 600; }
+  .qcell .unit { font-size: 9px; color: var(--ink-faint); }
+  .qcell.touched { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(217,131,36,0.14); }
+  .qcell .delta { display: block; font-size: 8.5px; color: var(--accent); }
+
+  .slider-row { display: grid; grid-template-columns: 96px 1fr 56px; gap: 9px; align-items: center;
+    font-size: 12.5px; color: var(--ink-soft); margin-bottom: 7px; }
+  .slider-row output { font-family: var(--mono); font-size: 12px; text-align: right; color: var(--ink); }
+  input[type="range"] { -webkit-appearance: none; appearance: none; height: 18px; background: transparent; cursor: pointer; width: 100%; }
+  input[type="range"]::-webkit-slider-runnable-track { height: 4px; border-radius: 3px; background: #f0dcc0; }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 14px; height: 14px; margin-top: -5px;
+    border-radius: 50%; background: #fff; border: 2px solid var(--accent);
+  }
+
+  .big { font-family: var(--mono); font-size: 30px; color: var(--accent); letter-spacing: -1px; line-height: 1.15; }
+  .big small { font-size: 12px; letter-spacing: 0; color: var(--ink-faint); }
+
+  .badges { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+  .badge { font-size: 11.5px; padding: 5px 10px; border-radius: 999px;
+    border: 1px dashed var(--line); color: var(--ink-faint); background: #fbfcfd; }
+  .badge.on { border-style: solid; border-color: #cfe9df; background: var(--good-soft); color: var(--good); }
+  .badge.live { border-style: solid; border-color: var(--accent); background: var(--accent-soft); color: #8a5a10; font-weight: 600; }
+  button.mini { font-size: 11px; padding: 3px 9px; border-radius: 999px; margin-left: auto; }
+
+  .kpis { display: flex; gap: 9px; flex-wrap: wrap; margin-top: 10px; }
+  .kpi { flex: 1 1 88px; background: #fbfcfd; border: 1px solid var(--line); border-radius: 8px; padding: 6px 9px; }
+  .kpi b { display: block; font-family: var(--mono); font-size: 14px; }
+  .kpi i { font-style: normal; font-size: 10px; color: var(--ink-faint); }
+
+  .note { margin-top: 10px; padding: 9px 11px; border-radius: 8px; font-size: 12px; line-height: 1.6;
+    background: #fbfcfd; border: 1px dashed var(--line); color: var(--ink-soft); }
+  .note.warn { background: var(--bad-soft); border-color: #f3d3cd; }
+  .note.good { background: var(--good-soft); border-color: #cfe9df; }
+  .note b { color: var(--accent); }
+  .note.warn b { color: var(--bad); }
+  .note.good b { color: var(--good); }
+
+  .formula { font-family: var(--mono); font-size: 12px; line-height: 1.7; background: #f8fafc;
+    border: 1px solid var(--line); border-radius: 8px; padding: 9px 11px; color: var(--ink-soft); white-space: pre-wrap; }
+
+  .duckstage { display: block; width: 100%; height: 170px; border-radius: 10px;
+    background: radial-gradient(120% 100% at 50% 0%, #fdfefe 0%, #f2f5f8 70%, #e8edf2 100%);
+    border: 1px solid var(--line); }
+  .duckstage.tall { height: 210px; }
+  .duckstage.short { height: 142px; }
+  .duckrow { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+  #duck3d { display: block; width: 100%; height: 306px; border-radius: 10px;
+    background: radial-gradient(120% 100% at 50% 0%, #ffffff 0%, #eef2f6 62%, #e2e8ef 100%);
+    border: 1px solid var(--line); cursor: grab; touch-action: none; }
+  #duck3d:active { cursor: grabbing; }
+  .jointbtns { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .jointbtns button { padding: 8px 4px; font-size: 12px; }
+  .jointbtns button.on { background: var(--accent-soft); border-color: var(--accent-line); color: #8a5a10; font-weight: 600; }
+
+  .obslist { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0 12px; }
+  .obsrow, .outrow { display: grid; grid-template-columns: 34px 56px 32px 1fr; align-items: center;
+    gap: 4px; font-size: 9.5px; line-height: 1.3; padding: 0.5px 0; }
+  .obsrow .g { color: var(--ink-faint); font-size: 9.5px; }
+  .obsrow .n, .outrow .n { color: var(--ink-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .obsrow .v, .outrow .v { font-family: var(--mono); text-align: right; color: var(--ink); }
+  .obsrow .bar, .outrow .bar { height: 5px; background: #f0f2f5; border-radius: 3px; overflow: hidden; }
+  .obsrow .bar i, .outrow .bar i { display: block; height: 100%; width: 0; transition: width 0.1s; }
+
+  .outlist { display: flex; flex-direction: column; gap: 1px; }
+  .outrow { grid-template-columns: 66px 1fr 42px; }
+
+  .heatrow { display: grid; grid-template-columns: repeat(16, 1fr); gap: 3px; margin-top: 6px; }
+  .heatrow .cell { aspect-ratio: 1; border: 1px solid var(--line); border-radius: 3px; background: #fff; cursor: pointer; }
+  .heatrow .cell:hover { border-color: var(--accent); }
+  .specgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; }
+  .spec { border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; background: #fbfcfd; }
+  .spec b { display: block; font-family: var(--mono); font-size: 14px; color: var(--ink); }
+  .spec i { font-style: normal; font-size: 10px; color: var(--ink-faint); }
+  .duckcap { font-size: 11.5px; color: var(--ink-faint); text-align: center; margin-top: 3px; }
+  .duckcap b { color: var(--ink); font-family: var(--mono); }
+  #curve { display: block; width: 100%; height: 220px; }
+  #trace { display: block; width: 100%; height: 132px; }
+  img.plot { width: 100%; display: block; border: 1px solid var(--line); border-radius: 10px; }
+
+  .plotwrap { position: relative; user-select: none; }
+  .plotwrap .ruler {
+    position: absolute; top: 0; bottom: 0; width: 2px; background: var(--accent);
+    left: 46%; cursor: ew-resize; touch-action: none;
+  }
+  .plotwrap .ruler::before {
+    content: ""; position: absolute; top: -7px; left: -6px;
+    width: 14px; height: 14px; border-radius: 50%; background: #fff; border: 2px solid var(--accent);
+  }
+  .plotwrap .ruler span {
+    position: absolute; top: 6px; left: 6px; white-space: nowrap;
+    font-family: var(--mono); font-size: 10.5px; color: #7a4f11;
+    background: rgba(255,255,255,0.92); border: 1px solid var(--accent-line);
+    padding: 1px 5px; border-radius: 4px;
+  }
+
+  .bets { display: flex; gap: 8px; flex-wrap: wrap; }
+  .bet {
+    flex: 1 1 92px; padding: 12px 8px; border: 1px solid var(--line); border-radius: 10px;
+    background: #fbfcfd; cursor: pointer; text-align: center; transition: all 0.15s;
+  }
+  .bet:hover { border-color: var(--accent-line); background: var(--accent-soft); }
+  .bet b { display: block; font-family: var(--mono); font-size: 17px; color: var(--ink); }
+  .bet i { font-style: normal; font-size: 10.5px; color: var(--ink-faint); }
+  .bet.picked { border-color: var(--accent); background: var(--accent-soft); }
+  .bet.right { border-color: var(--good); background: var(--good-soft); }
+  .bet.wrong { border-color: var(--bad); background: var(--bad-soft); }
+
+  #stageWrap {
+    position: relative; height: calc(100vh - 380px); min-height: 320px;
+    border-radius: 13px; border: 1px solid var(--line); overflow: hidden;
+    background: radial-gradient(120% 90% at 50% 0%, #fff 0%, #e9edf2 60%, #dfe4ea 100%);
+  }
+  #duckCanvas { display: block; width: 100%; height: 100%; }
+  .hud { position: absolute; left: 13px; top: 13px; display: flex; gap: 7px; flex-wrap: wrap; }
+  .chip {
+    background: rgba(255,255,255,0.9); border: 1px solid var(--line); border-radius: 7px;
+    padding: 4px 8px; font-family: var(--mono); font-size: 11px; color: var(--ink-soft); backdrop-filter: blur(6px);
+  }
+  .chip b { color: var(--ink); }
+  .chip.bad b { color: var(--bad); }
+  .chip.good b { color: var(--good); }
+  .timeline { position: absolute; left: 13px; right: 13px; bottom: 13px; }
+  .timeline .track { height: 6px; border-radius: 4px; background: rgba(255,255,255,0.75); overflow: hidden; border: 1px solid var(--line); }
+  .timeline .fill { height: 100%; width: 0; background: var(--accent); transition: width 0.12s linear; }
+  .timeline .cap { display: flex; justify-content: space-between; font-size: 10.5px; color: var(--ink-faint); margin-top: 4px; }
+  .overlay { position: absolute; inset: 0; display: grid; place-items: center;
+    background: rgba(246,247,249,0.86); backdrop-filter: blur(3px); transition: opacity 0.3s; }
+  .overlay.hide { opacity: 0; pointer-events: none; }
+  .loading-box { text-align: center; max-width: 320px; }
+  .spin { width: 22px; height: 22px; margin: 0 auto 12px; border: 2.5px solid #f0d3a9;
+    border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-box .t { font-size: 13px; font-weight: 600; }
+  .loading-box .n { font-size: 11px; color: var(--ink-faint); margin-top: 5px; }
+  .bar2 { height: 4px; background: #eef1f5; border-radius: 3px; margin: 12px 0 8px; overflow: hidden; }
+  .bar2 i { display: block; height: 100%; width: 0; background: var(--accent); transition: width 0.2s; }
+
+  .footbar { position: fixed; left: 0; right: 0; bottom: 0; display: flex; align-items: center;
+    justify-content: space-between; gap: 12px; padding: 10px 22px;
+    background: rgba(255,255,255,0.94); border-top: 1px solid var(--line); backdrop-filter: blur(8px); }
+  .footbar .where { font-size: 12px; color: var(--ink-faint); }
+
+  .legend { display: flex; flex-direction: column; gap: 5px; margin: 10px 0 4px; }
+  .legend span { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--ink-soft); line-height: 1.5; }
+  .legend i { flex: none; width: 20px; height: 20px; display: grid; place-items: center;
+    font-style: normal; border-radius: 5px; font-size: 11px; font-family: var(--mono); }
+  .lg-agent { background: #f5d9b4; color: #a5650f; }
+  .lg-arrow { background: #eaf5f0; color: #1f7a60; font-size: 14px; }
+  .lg-num { background: #f4f6f8; color: #66717e; font-size: 9px; }
+  .lg-pit { background: #fbeceb; color: #b8412f; font-size: 13px; }
+  .lg-goal { background: #eaf5f0; color: #1f7a60; }
+  .lg-dot { background: #fbfcfd; border: 1px solid var(--line); color: #dde3ea; }
+  .legend.inline { flex-direction: row; flex-wrap: wrap; gap: 6px 14px; }
+  .replaybtns { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; }
+  .replaybtns button { font-size: 11px; padding: 5px 2px; font-family: var(--mono); }
+  .replaybtns button.on { background: var(--accent-soft); border-color: var(--accent-line); color: #8a5a10; font-weight: 600; }
+  .scoreboard { width: 100%; border-collapse: collapse; font-size: 11.5px; margin-top: 2px; }
+  .scoreboard th { font-size: 10px; font-weight: 500; color: var(--ink-faint); text-align: left; padding: 2px 4px; border-bottom: 1px solid var(--line); }
+  .scoreboard td { padding: 2px 4px; border-bottom: 1px solid var(--line-soft); font-family: var(--mono); color: var(--ink-soft); }
+  .scoreboard td.empty { color: var(--ink-faint); font-family: -apple-system, sans-serif; }
+  .scoreboard tr.best td { color: var(--good); font-weight: 600; }
+  .scoreboard td.who { font-family: -apple-system, sans-serif; }
+  .rules { margin: 8px 0 2px; padding: 7px 9px; border-radius: 8px; background: #f8fafc;
+    border: 1px solid var(--line); font-size: 11px; line-height: 1.6; color: var(--ink-soft); }
+  .rules b { color: var(--ink); }
+  .rules .plus { color: var(--good); font-family: var(--mono); }
+  .rules .minus { color: var(--bad); font-family: var(--mono); }
+  .legend.two { display: grid; grid-template-columns: 1fr 1fr; gap: 3px 10px; }
+  .legend.two span { font-size: 11px; line-height: 1.4; align-items: flex-start; }
+  .legend.two i { width: 15px; height: 15px; font-size: 9px; margin-top: 1px; }
+
+  .graduate { margin-top: 12px; padding: 13px 15px; border-radius: 12px;
+    background: var(--good-soft); border: 1px solid #cfe9df; }
+  .graduate h4 { margin: 0; font-size: 13.5px; color: var(--good); }
+  .graduate p { font-size: 12.5px; color: var(--ink-soft); }
+  .graduate code { font-family: var(--mono); font-size: 11px; background: #fff; border: 1px solid var(--line); padding: 0 4px; border-radius: 4px; }
+
+  .three { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 14px; }
+  .three .note { margin: 0; }
+
+  @media (max-width: 900px) {
+    .split { grid-template-columns: 1fr; }
+    .three { grid-template-columns: 1fr; }
+    .station { padding: 14px 14px 80px; }
+    #stageWrap { height: calc(100vh - 300px); }
+  }
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <div class="name"><a href="../cover.html" style="color:inherit;text-decoration:none;">训练一只会站的鸭子</a><span>七关互动</span></div>
+  <div class="score">通关 <b id="scoreNum">0</b> / 8</div>
+  <div class="steps" id="dots"></div>
+</div>
+
+<main>
+
+  <!-- ═════ 1 结构 ═════ -->
+  <section class="station on" id="st1">
+    <div class="inner">
+      <div class="mission" id="m1">
+        <span class="tag">任务</span>
+        把它转着看一遍，点开 6 个关节，再把模型拆开看看里面
+        <span class="state" id="m1state">0 / 6</span>
+      </div>
+      <h1>第一关 · 这台鸭子是什么</h1>
+      <p class="sub">Pollen Robotics 开源的 MicroDuck：0.74 公斤、14 个伺服电机、两条腿。<b>拖动可以转着看。</b></p>
+
+      <div class="split">
+        <div class="card">
+          <canvas id="duck3d"></canvas>
+          <div class="slider-row" style="margin-top:8px;">
+            <label for="explode">拆开看</label>
+            <input id="explode" type="range" min="0" max="100" step="1" value="0">
+            <output id="explodev">0%</output>
+          </div>
+          <div class="note" id="partNote">
+            拖动旋转 · 滚轮缩放 · <b>点模型上任意一块</b>看它是哪个零件。拆开滑块拉回 0 就合回去。
+          </div>
+        </div>
+
+        <div class="card">
+          <h4>点一个关节，它当场动给你看</h4>
+          <p class="hint">这些就是它全部的 14 个关节里最能说明问题的 6 个。</p>
+          <div class="jointbtns" id="jointbtns"></div>
+          <div class="note" id="jointNote">还没选。点上面任意一个关节。</div>
+
+          <h4 style="margin-top:12px;">它的家底</h4>
+          <div class="specgrid">
+            <div class="spec"><b>0.74 kg</b><i>整机重量</i></div>
+            <div class="spec"><b>14 个</b><i>伺服电机</i></div>
+            <div class="spec"><b>12 cm</b><i>站着时髋的高度</i></div>
+            <div class="spec"><b>50 次/秒</b><i>每秒算 50 次怎么站</i></div>
+            <div class="spec"><b>0.96 N·m</b><i>每个舵机最大力矩</i></div>
+            <div class="spec"><b>38 块</b><i>3D 打印零件</i></div>
+          </div>
+
+          <div class="note warn" style="margin-top:10px;">
+            <b>关键：它头重脚轻。</b>头部组件 0.19 kg，躯干 0.20 kg，两条腿各 0.10 kg。
+            重量几乎都在上半身，所以脚一歪就倒 —— 这就是它必须每秒算 50 次、每次都微微调整关节的原因。
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═════ 2 赛跑 ═════ -->
+  <section class="station" id="st2">
+    <div class="inner">
+      <div class="mission" id="m2">
+        <span class="tag">任务</span>
+        你先手动把鸭子送进终点，再让它自己学 50 回合走一遍，看谁步数少
+        <span class="state" id="m2state">未开始</span>
+      </div>
+      <h1>第二关 · 和它比一场</h1>
+      <p class="sub">它能学的只有一张 25×4 的表。你先走，再让它学。</p>
+
+      <div class="split">
+        <div class="card">
+          <h4>格子里的鸭子</h4>
+          <p class="hint" style="margin-bottom:6px;">用下面的箭头键走。<b>走一格 = 一步</b>。撞墙不动，掉坑重来，走到小旗就赢。</p>
+          <svg id="grid" viewBox="0 0 340 340" role="img" aria-label="5x5 格子世界"></svg>
+
+          <div class="legend two">
+            <span><i class="lg-agent">鸭</i>鸭子现在站的地方</span>
+            <span><i class="lg-arrow">↓</i>它最想走的方向</span>
+            <span><i class="lg-num">3.0</i>走这边大概能拿多少分</span>
+            <span><i class="lg-pit">×</i>坑，掉进去扣 10 分</span>
+            <span><i class="lg-goal">旗</i>终点，走到就赢，加 10 分</span>
+            <span><i class="lg-dot">·</i>还没去过，什么都不知道</span>
+            <span><i class="lg-num" style="background:#e8f0f7;color:#4a7ba6;">•</i>这一格被你走过、被改过</span>
+            <span><i class="lg-num" style="background:#f4f6f8;color:#b8c0ca;">0.02</i>数很小、箭头浅 = 只走过一两次，还不可信</span>
+          </div>
+
+          <div class="rules">
+            <b>计分：</b>终点 <span class="plus">+10</span> · 坑 <span class="minus">−10</span> ·
+            撞墙 <span class="minus">−1</span> · 每步 <span class="minus">−0.1</span>。走得越短，分越高。
+            <span style="color:var(--ink-faint)">（一步 = 走一格）</span>
+          </div>
+
+          <div class="playrow">
+            <div class="dpad">
+              <button class="up" data-dir="0">↑</button>
+              <button class="left" data-dir="2">←</button>
+              <button class="down" data-dir="1">↓</button>
+              <button class="right" data-dir="3">→</button>
+            </div>
+            <div class="race">
+              <div class="racer" id="racerYou"><i>你走了几步</i><b>—</b><em>0.0 分</em></div>
+              <div class="racer" id="racerAI"><i>它走了几步</i><b>—</b><em>0.0 分</em></div>
+            </div>
+          </div>
+
+          <div class="btnrow" style="margin-top:8px;">
+            <button class="primary" id="btnTrain">让它学 50 回合</button>
+            <button id="btnRunAI" disabled>让它自己走</button>
+            <button id="btnAgain">我再走一遍</button>
+            <button id="btnRestart">全部重来</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h4>它心里那张「打分表」</h4>
+          <p class="hint">
+            鸭子每站在一格，就会给<b>上下左右四个方向各打一个分</b>。哪个分高，它下次就更想往那边走。
+            这张表一共 25 格 × 4 个方向 = 100 个分数，一开始全是 0。
+          </p>
+          <p class="hint" style="color:var(--ink);">
+            <b>数字是学出来的，不是走出来的。</b>每走完一趟就把经验写进表里 —— 你走一趟也写，
+            只是<b>一趟只改一点点</b>；它练 50 回合，所以改得多。改过的格子右上角有<b style="color:#7aa7cc;">小蓝点</b>。
+            <br>留意一个规律：<b>越靠近起点，分数越小</b>。好处是一格一格往回传的，每传一格还要打个折（打 95 折），
+            所以远处的好处传回来时会变小。这就是为什么一开始它只在终点附近会走。
+          </p>
+          <p class="hint" id="qcaption" style="color:var(--ink);">它现在站在起点，四个方向都还没试过，所以四个数都是 0。</p>
+          <div class="qmini" id="qmini"></div>
+          <p class="hint" style="margin-top:12px;">刚才发生了什么</p>
+          <div class="log" id="log"><div class="empty">等你先走几步，或者让它学一轮。</div></div>
+
+          <div id="replayBox" style="display:none;">
+            <p class="hint" style="margin-top:12px;">看它怎么学会的（点开看，慢放一遍）</p>
+            <div class="replaybtns" id="replayBtns"></div>
+            <canvas id="spark" style="display:block;width:100%;height:52px;"></canvas>
+            <div class="legend inline" style="margin-top:4px;">
+              <span><i class="lg-num" style="background:#fdf4e8;color:#d98324;">橙</i>瞎走的步（探索）</span>
+              <span><i class="lg-num" style="background:#eaf5f0;color:#1f7a60;">绿</i>查表走的步（利用）</span>
+            </div>
+          </div>
+          <p class="hint" style="margin-top:10px;">成绩单（每走完一趟记一笔，可以反复练）</p>
+          <table class="scoreboard">
+            <thead><tr><th>第几趟</th><th>谁</th><th>步数</th><th>分数</th><th>练过</th></tr></thead>
+            <tbody id="board"><tr><td colspan="5" class="empty">还没有记录</td></tr></tbody>
+          </table>
+          <div class="note" id="raceNote" style="margin-top:8px;">
+            它一开始什么都不知道：走错扣分，走对加分，四个方向的分就是这样被一点点改出来的。
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═════ 3 撑爆 ═════ -->
+  <section class="station" id="st3">
+    <div class="inner">
+      <div class="mission" id="m3">
+        <span class="tag">任务</span>
+        先给鸭子摆个姿势，再把这张表撑到比宇宙原子还多（10⁸⁰ 以上）
+        <span class="state" id="m3state">—</span>
+      </div>
+      <h1>第三关 · 把表格撑爆</h1>
+      <p class="sub">鸭子的每个姿势，在表格里都要占一行。</p>
+
+      <div class="split">
+        <div class="card">
+          <h4>先给鸭子摆个姿势</h4>
+          <p class="hint">拖两个滑块，看它的腿怎么弯。<b>每换一个角度，就是表格里新的一行。</b></p>
+          <canvas id="duck2" class="duckstage tall"></canvas>
+          <div class="slider-row" style="margin-top:10px;">
+            <label for="hip2">髋关节</label>
+            <input id="hip2" type="range" min="0" max="110" step="1" value="28">
+            <output id="hipv">28°</output>
+          </div>
+          <div class="slider-row">
+            <label for="knee2">膝关节</label>
+            <input id="knee2" type="range" min="0" max="140" step="1" value="18">
+            <output id="kneev">18°</output>
+          </div>
+          <div class="note" id="poseNote">
+            现在这个姿势是第 <b>1</b> 行（一共 100 行：两个关节各切 10 档）。
+          </div>
+        </div>
+
+        <div class="card">
+          <h4>那真鸭子要多少行</h4>
+          <p class="hint">
+            真鸭子不止 2 个关节，它同时有 <b>36 个数字</b>（每个关节的角度、转得多快、身体歪多少…）。
+            每个数字只切 10 档来记，行数就是这个数：
+          </p>
+          <div class="slider-row">
+            <label for="dim">身上有几个数字</label>
+            <input id="dim" type="range" min="2" max="120" step="1" value="36">
+            <output id="dimv">36</output>
+          </div>
+          <div class="big" id="rows">10<sup style="font-size:0.62em;vertical-align:super;">36</sup></div>
+          <p class="hint" id="rowsRead" style="margin:4px 0 0;"></p>
+          <p class="hint" id="rowsNote" style="margin:6px 0 0;"></p>
+          <div class="note good" id="boom" style="display:none;">
+            <b>撑爆了。</b>10⁸⁰ 是宇宙里所有原子的数量级。这张表没有任何机器存得下。
+          </div>
+          <div class="note" style="margin-top:12px;">
+            所以鸭子改用<b>一个算式</b>：给它 36 个数，它算出 14 个关节的角度。
+            查表只能查你切过的角度；算式对<b>任何</b>角度都能给答案 —— 真鸭子身上永远有没切过的角度。
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═════ 4 漏洞 ═════ -->
+  <section class="station" id="st4">
+    <div class="inner">
+      <div class="mission" id="m4">
+        <span class="tag">任务</span>
+        调这三个权重，让它学出三种坏行为（找到就记一枚，可以反复试）
+        <span class="state" id="m4state">0 / 3</span>
+      </div>
+      <h1>第四关 · 找出三个漏洞</h1>
+      <p class="sub">它不会做「对」的事，只会做「分高」的事。你把奖励写歪，它就学歪。</p>
+
+      <div class="split">
+        <div class="card">
+          <h4>三个权重</h4>
+          <p class="hint">每 0.02 秒给它算一次分。下面三项各占多少，你来定。</p>
+          <div class="slider-row">
+            <label for="wAlive">活着就给分</label>
+            <input id="wAlive" type="range" min="0" max="2" step="0.05" value="1">
+            <output id="vAlive">1.00</output>
+          </div>
+          <div class="slider-row">
+            <label for="wUp">站得直再给分</label>
+            <input id="wUp" type="range" min="0" max="1.5" step="0.05" value="0.5">
+            <output id="vUp">0.50</output>
+          </div>
+          <div class="slider-row">
+            <label for="wAct">乱动就扣分</label>
+            <input id="wAct" type="range" min="0" max="0.2" step="0.005" value="0.02">
+            <output id="vAct">0.020</output>
+          </div>
+          <div class="formula" id="rewardFormula"></div>
+        </div>
+
+        <div class="card">
+          <h4>它会学成什么样</h4>
+          <p class="hint">按你调的分数，它最后会练成这种样子（示意图，真实训练出来的行为就是这样）。</p>
+          <canvas id="duck3" class="duckstage"></canvas>
+          <div class="note" id="behaviorNote" style="margin-top:8px;">正在按「正常站立」训练。</div>
+          <div class="big" id="rewardVal">1.49</div>
+          <div class="badges" id="badges">
+            <span class="badge" data-b="lie">躺平</span>
+            <span class="badge" data-b="shake">抽搐</span>
+            <span class="badge" data-b="lock">锁死</span>
+            <button id="btnResetW" class="mini">恢复原配比</button>
+          </div>
+          <div class="note" id="prediction"></div>
+        </div>
+      </div>
+
+      <div class="note warn" style="margin-top:14px;">
+        <b>真实事故，就发生在你这台鸭子上。</b>第一版训练时，我读错了「直立度」的索引，算出来永远是 1.0。
+        结果策略学会了<b>拿脑袋撑在地上</b>——只要躯干高度不跌破 6cm，分数照拿。
+        训练曲线一路满分，鸭子其实是趴着的。改对那一行、重训之后，它才真的站着。
+        你改这三个滑块，就是在亲手复现同一类事故。
+      </div>
+
+      <div class="three">
+        <div class="note"><b>躺平</b>把「活着」调到 0，它发现躺着也有分、还省力气，于是学会瘫着不动。你给它 8 倍刚度才能站，它偏不。</div>
+        <div class="note"><b>抽搐</b>把「乱动扣分」调到 0，它发现抖着也能活，还能多拿站直分，于是学会高频抖动。动作幅度不再有成本。</div>
+        <div class="note"><b>锁死</b>把「站得直」调得很高，它宁可僵硬地锁住关节也不敢迈步。安全、稳，但一动就倒。</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═════ 5 拐点 ═════ -->
+  <section class="station" id="st5">
+    <div class="inner">
+      <div class="mission" id="m5">
+        <span class="tag">任务</span>
+        把竖线拖到「鸭子开始站得住」的那个回合，误差 300 回合以内算中
+        <span class="state" id="m5state">未提交</span>
+      </div>
+      <h1>第五关 · 找到拐点</h1>
+      <p class="sub">这条曲线是真跑出来的：2939 个回合，练了 3 分钟。拖动竖线，看它当时的样子。</p>
+
+      <div class="card">
+        <canvas id="chart4" style="display:block;width:100%;height:224px;"></canvas>
+        <div class="legend inline" style="margin-top:8px;">
+          <span><i class="lg-num" style="background:#f1efea;color:#5f5e5a;">横</i>练到第几回合</span>
+          <span><i class="lg-num" style="background:#f1efea;color:#5f5e5a;">纵</i>这一回合撑了几步</span>
+          <span><i class="lg-num" style="background:#f4f6f8;color:#9aa4b0;">灰</i>每次的成绩</span>
+          <span><i class="lg-num" style="background:#fdf4e8;color:#d98324;">橙</i>平均成绩</span>
+          <span><i class="lg-num" style="background:#fbeceb;color:#d98324;">│</i>你拖的这条竖线</span>
+        </div>
+
+        <div style="display:grid; grid-template-columns:238px minmax(0,1fr); gap:14px; margin-top:10px; align-items:center;">
+          <canvas id="duck4" class="duckstage" style="height:140px;"></canvas>
+          <div>
+            <div class="kpis">
+              <div class="kpi"><i>第几回合</i><b id="k4ep">—</b></div>
+              <div class="kpi"><i>这一回合</i><b id="k4len">—</b></div>
+              <div class="kpi"><i>30 回合平均</i><b id="k4ma">—</b></div>
+            </div>
+            <div class="note" id="r4note">
+              一步 = 0.02 秒，500 步 = 10 秒。鸭子会不会倒，就看这个回合它撑了几步。
+            </div>
+          </div>
+        </div>
+
+        <div class="btnrow" style="margin-top:10px;">
+          <button class="primary" id="btnCheck4">就这里</button>
+          <button id="btnPlay4">播放训练</button>
+          <span style="font-size:11.5px;color:var(--ink-faint);">也可以直接点曲线上任意位置</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═════ 6 押注 ═════ -->
+  <section class="station" id="st6">
+    <div class="inner">
+      <div class="mission" id="m6">
+        <span class="tag">任务</span>
+        押一注：把策略关掉、只给固定角度，它能撑多久？押完揭晓
+        <span class="state" id="m6state">未押注</span>
+      </div>
+      <h1>第六关 · 押一注</h1>
+      <p class="sub">同样一台机器、同样一套物理，唯一差别是「要不要每 0.02 秒自己调一次关节」。<br>
+        这里说的「步」= 0.02 秒，500 步 = 10 秒。</p>
+
+      <div class="bets" id="bets">
+        <div class="bet" data-v="40"><b>40 步</b><i>不到 1 秒</i></div>
+        <div class="bet" data-v="250"><b>250 步</b><i>5 秒左右</i></div>
+        <div class="bet" data-v="500"><b>500 步</b><i>满分 10 秒</i></div>
+      </div>
+
+      <div class="card" style="margin-top:14px;">
+        <canvas id="trace"></canvas>
+        <div class="kpis" style="margin-top:10px;">
+          <div class="kpi"><i>坚持步数</i><b id="kSteps">—</b></div>
+          <div class="kpi"><i>是否摔倒</i><b id="kFall">—</b></div>
+          <div class="kpi"><i>高度波动</i><b id="kSwing">—</b></div>
+          <div class="kpi"><i>换算成时间</i><b id="kSec">—</b></div>
+        </div>
+        <div class="legend inline" style="margin-top:8px;">
+          <span><i class="lg-num" style="background:#f1efea;color:#5f5e5a;">横</i>第几步（1 步 = 0.02 秒）</span>
+          <span><i class="lg-num" style="background:#f1efea;color:#5f5e5a;">纵</i>身体离地多高（厘米）</span>
+          <span><i class="lg-num" style="background:#fbeeec;color:#b8412f;">红</i>关掉策略</span>
+          <span><i class="lg-num" style="background:#eaf5f0;color:#1f7a60;">绿</i>打开策略</span>
+        </div>
+        <div class="btnrow" style="margin-top:10px;">
+          <button id="btnDet">看「关掉策略」的结果</button>
+          <button id="btnSample">看「打开策略」的结果</button>
+        </div>
+        <div class="duckrow">
+          <div><canvas id="duck5a" class="duckstage short"></canvas>
+            <div class="duckcap">关掉策略：<b id="cap5a">—</b></div></div>
+          <div><canvas id="duck5b" class="duckstage short"></canvas>
+            <div class="duckcap">打开策略：<b id="cap5b">—</b></div></div>
+        </div>
+        <div class="note" id="traceNote">先押一注，再点按钮揭晓。</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═════ 7 拆开看 ═════ -->
+  <section class="station" id="st7">
+    <div class="inner">
+      <div class="mission" id="m7">
+        <span class="tag">任务</span>
+        拖左边的滑块，看中间的网络怎么亮、右边鸭子怎么动；再点一个格子看它怎么算的
+        <span class="state" id="m7state">0 / 2</span>
+      </div>
+      <h1>第七关 · 拆开看它怎么算的</h1>
+      <p class="sub">它的策略就是一个 36 → 64 → 64 → 14 的算式，全部存在 157 KB 的权重文件里。下面跑的就是那个真文件。</p>
+
+      <div class="split" style="grid-template-columns: 1fr 1fr;">
+        <div class="card">
+          <h4>输入：36 个数（就是它此刻看到的东西）</h4>
+          <p class="hint">拖滑块改它，右边立刻跟着变。这就是它在每 0.02 秒里看到的全部信息。</p>
+          <div id="obsList" class="obslist"></div>
+          <div class="slider-row" style="margin-top:8px;">
+            <label for="tiltX">躯干前倾</label>
+            <input id="tiltX" type="range" min="0" max="60" step="1" value="0">
+            <output id="tiltXv">0°</output>
+          </div>
+          <div class="slider-row">
+            <label for="kneeL">左膝角度</label>
+            <input id="kneeL" type="range" min="-90" max="90" step="1" value="0">
+            <output id="kneeLv">0°</output>
+          </div>
+          <div class="slider-row">
+            <label for="hgt">离地高度</label>
+            <input id="hgt" type="range" min="6" max="14" step="0.1" value="12">
+            <output id="hgtv">12 cm</output>
+          </div>
+        </div>
+
+        <div class="card">
+          <h4>输出：14 个关节的目标角偏移</h4>
+          <p class="hint">网络每 0.02 秒算出这 14 个数，鸭子就照着动。</p>
+          <div style="display:grid; grid-template-columns: minmax(0,1fr) minmax(0,1.15fr); gap:12px; align-items:start;">
+            <div id="outList" class="outlist"></div>
+            <canvas id="duckNet" class="duckstage" style="height:206px;"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="split" style="grid-template-columns: 1fr 1fr; margin-top:14px;">
+        <div class="card">
+          <h4>中间那一层在干什么</h4>
+          <p class="hint">64 个小格就是 64 个「特征」，越亮越敏感。<b>点一个格子</b>，看它怎么算出来的。</p>
+          <div class="heatrow" id="heat1"></div>
+          <div class="note" id="mathNote">
+            还没选。点亮一个格子，它那一行就是「64 个权重 × 36 个输入，加起来再过一次 tanh」。
+          </div>
+        </div>
+        <div class="card">
+          <h4>梯度是什么（它怎么学会改权重）</h4>
+          <p class="hint">分数是一座山的坡度，训练让小球往山下滚。点「更新一次」。</p>
+          <canvas id="gradCanvas" style="display:block;width:100%;height:110px;"></canvas>
+          <div class="btnrow" style="margin-top:8px;">
+            <button class="primary" id="btnGrad">更新一次</button>
+            <button id="btnGradMany">连按 30 次</button>
+            <span style="font-size:11px;color:var(--ink-faint);" id="gradState">参数 θ = 0.00</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═════ 7 实况 ═════ -->
+  <section class="station" id="st8">
+    <div class="inner">
+      <div class="mission" id="m8">
+        <span class="tag">任务</span>
+        这只鸭子现在用真策略站着。推它一下，撑满 10 秒就算通关
+        <span class="state" id="m8state">最长 0.0 / 10 秒</span>
+      </div>
+      <h1>第八关 · 让它自己站住</h1>
+      <p class="sub">下面这只鸭子不是动画：它的物理和「怎么调关节」都在你的浏览器里实时算。</p>
+
+      <div class="legend inline" style="margin-bottom:10px;">
+        <span><i class="lg-num" style="background:#f4f6f8;color:#66717e;">高</i>身体离地多高，掉到 6cm 以下就算摔了</span>
+        <span><i class="lg-num" style="background:#f4f6f8;color:#66717e;">态</i>现在站着还是倒了</span>
+        <span><i class="lg-num" style="background:#f4f6f8;color:#66717e;">时</i>连续站了多久</span>
+        <span><i class="lg-num" style="background:#f4f6f8;color:#66717e;">策</i>「开」= 它自己在调；「关」= 它不管了</span>
+      </div>
+
+      <div id="stageWrap">
+        <canvas id="duckCanvas"></canvas>
+        <div class="hud">
+          <span class="chip" id="cHeight">高度 <b>—</b></span>
+          <span class="chip" id="cUpright">状态 <b>—</b></span>
+          <span class="chip" id="cTime">已站 <b>—</b></span>
+          <span class="chip" id="cPolicy">策略 <b>开</b></span>
+        </div>
+        <div class="timeline">
+          <div class="track"><div class="fill" id="tlFill"></div></div>
+          <div class="cap"><span>0 秒</span><span>最长连续站立，10 秒 = 训练时的满分</span></div>
+        </div>
+        <div class="overlay" id="loading">
+          <div class="loading-box">
+            <div class="spin"></div>
+            <div class="t" id="loadTitle">准备模型…</div>
+            <div class="bar2"><i id="loadFill"></i></div>
+            <div class="n">模型和物理引擎全部本地加载，不上传任何数据</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="graduate" id="graduate" style="display:none;">
+        <h4>七关全过了</h4>
+        <p style="margin:6px 0 0;">
+          你现在已经知道了：试错怎么记分、表怎么装不下、奖励写歪会怎样、训练曲线为什么先平后陡、
+          怎么判断它是真会还是装的、以及这台鸭子为什么头重脚轻。
+          剩下的就是代码 —— <code>rl-lab/README.md</code> 里有五个可以直接跑的脚本。
+        </p>
+      </div>
+
+      <div class="btnrow" style="margin-top:10px;">
+        <button class="primary" id="btnPoke">推它一下</button>
+        <button id="btnPolicy">关掉策略，看它倒</button>
+        <button id="btnReset">回正</button>
+        <span style="font-size:11.5px;color:var(--ink-faint);">鼠标拖拽旋转视角，滚轮缩放</span>
+      </div>
+
+      <p class="sub" style="margin:8px 0 0;">
+        这版策略是真的站直了：躯干稳定在 11.5–11.8cm，几乎不晃。
+        第一版不是这样 —— 那一版它学会了用脑袋撑地，因为我的奖励函数写错了（第三关里那个真实事故）。
+      </p>
+    </div>
+  </section>
+
+</main>
+
+<div class="footbar">
+  <button id="prev">上一关</button>
+  <div class="where" id="where">第 1 关 / 共 7 关</div>
+  <button class="primary" id="next">下一关</button>
+</div>
+
+<script type="module">
+/* ════════════════════════════════════════════════════════════
+   关卡切换 + 通关记录
+   ════════════════════════════════════════════════════════════ */
+const TOTAL = 8;
+let cur = 1;
+let behaviorKind = 'normal';
+const passed = new Set();
+
+const dots = document.getElementById('dots');
+for (let i = 1; i <= TOTAL; i++) {
+  const d = document.createElement('div');
+  d.className = 'step-dot';
+  d.textContent = String(i);
+  d.onclick = () => go(i);
+  dots.appendChild(d);
+}
+
+function mark(id) {
+  if (passed.has(id)) return;
+  passed.add(id);
+  if (passed.size === TOTAL) {
+    const g = document.getElementById('graduate');
+    if (g) g.style.display = 'block';
+  }
+  document.getElementById('scoreNum').textContent = String(passed.size);
+  const n = Number(id.slice(1));
+  dots.children[n - 1].classList.add('done');
+  dots.children[n - 1].textContent = '✓';
+  const m = document.getElementById('m' + n);
+  if (m) {
+    m.classList.add('ok');
+    m.querySelector('.state').textContent = '已通关';
+  }
+}
+
+function go(n) {
+  cur = Math.max(1, Math.min(TOTAL, n));
+  for (let i = 1; i <= TOTAL; i++) {
+    document.getElementById('st' + i).classList.toggle('on', i === cur);
+    const d = dots.children[i - 1];
+    d.classList.toggle('on', i === cur && !passed.has('s' + i));
+  }
+  document.getElementById('where').textContent = `第 ${cur} 关 / 共 ${TOTAL} 关`;
+  document.getElementById('prev').disabled = cur === 1;
+  document.getElementById('next').textContent = cur === TOTAL ? '回到第一关' : '下一关';
+  if (cur === 1) initAnatomy3D();
+  if (cur === 3) ensureView('duck2', { dist: 0.50, azim: 0.95, elev: 0.20, targetZ: 0.085 });
+  if (cur === 4) ensureView('duck3', { dist: 0.54, azim: 0.95, elev: 0.24, targetZ: 0.095 });
+  if (cur === 5) { ensureView('duck4', { dist: 0.42, azim: 0.95, elev: 0.20, targetZ: 0.08 }); if (H4) { drawChart4(); updateK4(); } }
+  if (cur === 7) {
+    ensureView('duckNet', { dist: 0.56, azim: 0.95, elev: 0.22, targetZ: 0.10 });
+    renderNet();
+    drawGrad();
+  }
+  if (cur === 6) {
+    ensureView('duck5a', { dist: 0.40, azim: 0.95, elev: 0.18, targetZ: 0.075 });
+    ensureView('duck5b', { dist: 0.40, azim: 0.95, elev: 0.18, targetZ: 0.075 });
+  }
+  if (cur === 6) { clearTrace(); renderS5(); }
+  if (cur === 8) initDuck();
+}
+document.getElementById('prev').onclick = () => go(cur - 1);
+document.getElementById('next').onclick = () => go(cur === TOTAL ? 1 : cur + 1);
+
+/* ════════════════════════════════════════════════════════════
+   第一关：人机赛跑
+   ════════════════════════════════════════════════════════════ */
+const W = 5, H = 5, START = [0, 0], GOAL = [4, 4], PIT = [2, 2];
+const ACTS = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+const ANAME = ['上', '下', '左', '右'];
+const ARROW = ['↑', '↓', '←', '→'];
+const ALPHA = 0.2, GAMMA = 0.95, EPS = 0.2;
+
+let qq, s1 = { state: START.slice(), you: null, youScore: 0, ai: null, aiScore: 0, done: false, phase: 'idle', last: null, log: [], board: [], trained: 0, trace: [], touched: new Set(), snaps: null, epReturns: [], replayQ: null, replayMarks: null };
+let aiTimer = null, aiWarm = false;
+
+function near(a, b) { return a[0] === b[0] && a[1] === b[1]; }
+function posText(p) { return `第 ${p[0] + 1} 行第 ${p[1] + 1} 列`; }
+function key(s) { return s[0] * W + s[1]; }
+let qvis = new Uint16Array(100);
+function resetQ() { qq = Array.from({ length: 25 }, () => [0, 0, 0, 0]); qvis = new Uint16Array(100); }
+
+function envStep(st, a) {
+  const r = st[0] + ACTS[a][0], c = st[1] + ACTS[a][1];
+  if (r < 0 || r >= H || c < 0 || c >= W) return [st, -1, false];
+  if (r === PIT[0] && c === PIT[1]) return [[r, c], -10, true];
+  if (r === GOAL[0] && c === GOAL[1]) return [[r, c], 10, true];
+  return [[r, c], -0.1, false];
+}
+
+function s1reset() {
+  resetQ();
+  clearInterval(aiTimer);
+  s1 = { state: START.slice(), you: null, youScore: 0, ai: null, aiScore: 0, done: false, phase: 'ready', last: null, log: [], board: [], trained: 0, trace: [], touched: new Set(), snaps: null, epReturns: [], replayQ: null, replayMarks: null };
+  aiWarm = false;
+  document.getElementById('btnRunAI').disabled = true;
+  document.getElementById('btnTrain').disabled = false;
+  document.getElementById('racerYou').className = 'racer';
+  document.getElementById('racerAI').className = 'racer';
+  document.querySelector('#racerYou b').textContent = '—';
+  document.querySelector('#racerAI b').textContent = '—';
+  document.querySelector('#racerYou em').textContent = '0.0 分';
+  document.querySelector('#racerAI em').textContent = '0.0 分';
+  document.getElementById('m2state').textContent = '未开始';
+  document.getElementById('raceNote').className = 'note';
+  document.getElementById('raceNote').innerHTML =
+    '它一开始什么都不知道：走错扣分，走对加分，四个方向的分就是这样被一点点改出来的。';
+  render();
+}
+
+function renderBoard() {
+  const body = document.getElementById('board');
+  if (!s1.board.length) {
+    body.innerHTML = '<tr><td colspan="5" class="empty">还没有记录</td></tr>';
+    return;
+  }
+  const scores = s1.board.map((r) => r.score);
+  const best = Math.max(...scores);
+  const uniqueBest = scores.filter((v) => v === best).length === 1;
+  body.innerHTML = s1.board.map((r) => `
+    <tr class="${uniqueBest && r.score === best ? 'best' : ''}">
+      <td>${r.n}</td>
+      <td class="who">${r.who}</td>
+      <td>${r.steps}</td>
+      <td>${r.score.toFixed(1)}</td>
+      <td>${r.trained}</td>
+    </tr>`).join('');
+}
+
+function addRecord(who, steps, score, trained) {
+  s1.board.push({ n: 0, who, steps, score, trained });
+  if (s1.board.length > 6) s1.board.shift();
+  s1.board.forEach((r, i) => { r.n = i + 1; });
+  renderBoard();
+}
+
+function logRow(html) {
+  s1.log.unshift(html);
+  if (s1.log.length > 3) s1.log.pop();
+  document.getElementById('log').innerHTML = s1.log.map((t) => `<div class="row">${t}</div>`).join('');
+}
+
+function youMove(dir) {
+  if (s1.done) return;                        // 已经走完
+  const [nxt, r, done] = envStep(s1.state, dir);
+  s1.inspect = null;
+  s1.trace.push({ from: s1.state.slice(), a: dir, r, to: nxt.slice(), done });
+  s1.state = nxt.slice();
+  s1.you = (s1.you || 0) + 1;
+  s1.youScore = Math.round((s1.youScore + r) * 10) / 10;
+  document.querySelector('#racerYou b').textContent = s1.you + ' 步';
+  document.querySelector('#racerYou em').textContent = s1.youScore.toFixed(1) + ' 分';
+
+  if (done && near(nxt, GOAL)) {
+    s1.state = nxt.slice();
+    s1.done = true;
+    document.getElementById('m2state').textContent = '你赢了，等它';
+    logRow(`你用了 <b>${s1.you} 步</b>走到终点，这一趟 <b>${s1.youScore.toFixed(1)} 分</b>。已记进成绩单。`);
+    addRecord('你', s1.you, s1.youScore, '—');
+    learnFromMyWalk();
+    finishRace();
+  } else if (done) {
+    logRow(`掉坑了，这一趟只剩 <b>${s1.youScore.toFixed(1)} 分</b>。`);
+    learnFromMyWalk();
+    s1.you = null;
+    s1.youScore = 0;
+    s1.state = START.slice();
+    document.querySelector('#racerYou b').textContent = '—';
+    document.querySelector('#racerYou em').textContent = '0.0 分';
+  } else if (near(nxt, s1.state) && r === -1) {
+    logRow(`前面是墙，走不动，这一步白走还扣 1 分（现在 ${s1.youScore.toFixed(1)} 分）。`);
+  }
+  render();
+}
+
+function learnFromMyWalk() {
+  if (!s1.trace.length) return;
+  const touched = new Set();
+  let biggest = null;
+  // 从最后一步往回算，和 Q-learning 的规矩一样：后面学到的，回传给前面
+  for (let i = s1.trace.length - 1; i >= 0; i--) {
+    const t = s1.trace[i];
+    const k = key(t.from);
+    const old = qq[k][t.a];
+    const target = t.done ? t.r : t.r + GAMMA * Math.max(...qq[key(t.to)]);
+    const nw = old + ALPHA * (target - old);
+    qq[k][t.a] = nw;
+    qvis[k * 4 + t.a] += 1;
+    touched.add(k);
+    if (!biggest || Math.abs(nw - old) > Math.abs(biggest.delta)) {
+      biggest = { pos: t.from, a: t.a, old, nw, delta: nw - old };
+    }
+  }
+  s1.touched = touched;
+  s1.trace = [];
+  s1.inspect = biggest ? biggest.pos.slice() : null;
+  s1.inspectInfo = biggest;
+  if (biggest) {
+    logRow(`这一趟也写进了打分表：改动了 <b>${touched.size} 格</b>，
+      最大的一处是 ${posText(biggest.pos)}「${ANAME[biggest.a]}」：
+      <b>${biggest.old.toFixed(2)} → ${biggest.nw.toFixed(2)}</b>。
+      一次只动这么一点，所以要练很多次。`);
+  }
+}
+
+function finishRace() {
+  const you = s1.you, ai = s1.ai;
+  const ys = s1.youScore, as = s1.aiScore;
+  const note = document.getElementById('raceNote');
+  if (you === null && ai === null) return;
+
+  if (you === null || ai === null) {
+    note.className = 'note';
+    note.innerHTML = ai !== null
+      ? `它这一趟：<b>${ai} 步，${as.toFixed(1)} 分</b>（累计练了 ${s1.trained} 回合）。你也可以点「我再走一遍」跟它比。`
+      : `你这一趟：<b>${you} 步，${ys.toFixed(1)} 分</b>。点「让它学 50 回合」，看它能不能比你少走几步。`;
+    return;
+  }
+
+  const head = `<b>你：${you} 步，${ys.toFixed(1)} 分　·　它：${ai} 步，${as.toFixed(1)} 分</b><br>`;
+  if (ai < you) {
+    note.className = 'note good';
+    note.innerHTML = head + '它没被告知规则，只摔了几十次，就找到了一条比你更短的路 —— 步数少，分就高。';
+  } else if (ai === you) {
+    note.className = 'note';
+    note.innerHTML = head + '打平。它用 50 回合，学会了你用脑子算出来的那条路。';
+  } else {
+    note.className = 'note warn';
+    note.innerHTML = head + '你赢了。50 回合还太少，它有的格子还没走到 —— 多练几轮，它的步数会更少、分更高。';
+  }
+  document.getElementById('m2state').textContent = `${you} 步 ${ys.toFixed(1)} 分 vs 它 ${ai} 步 ${as.toFixed(1)} 分`;
+  mark('s2');
+}
+
+function trainAI() {
+  clearInterval(aiTimer);
+  document.getElementById('btnTrain').disabled = true;
+  s1.trained += 50;
+  s1.inspect = null; s1.inspectInfo = null;   // 训练会改写数值，之前那格的高亮说明就作废了
+  s1.log = [];
+  // 50 回合训练，同时记录 4 个采样回合的完整路径和表格快照
+  const sampleAt = [0, 15, 30, 49];
+  s1.snaps = {};
+  s1.epReturns = [];
+  for (let ep = 0; ep < 50; ep++) {
+    let st = START.slice(), total = 0;
+    const path = [];
+    for (let t = 0; t < 60; t++) {
+      let a, explored = false;
+      if (Math.random() < EPS) { a = Math.floor(Math.random() * 4); explored = true; }
+      else {
+        const v = qq[key(st)], b = Math.max(...v);
+        const idx = v.map((x, i) => (x === b ? i : -1)).filter((i) => i >= 0);
+        a = idx[Math.floor(Math.random() * idx.length)];
+      }
+      const [nxt, r, done] = envStep(st, a);
+      path.push({ pos: nxt.slice(), a, explored });
+      const target = done ? r : r + GAMMA * Math.max(...qq[key(nxt)]);
+      qq[key(st)][a] += ALPHA * (target - qq[key(st)][a]);
+      qvis[key(st) * 4 + a] += 1;
+      st = nxt; total += r;
+      if (done) break;
+    }
+    s1.epReturns.push(Math.round(total * 10) / 10);
+    if (sampleAt.includes(ep)) {
+      s1.snaps[ep + 1] = {
+        q: qq.map((c) => c.slice()),
+        path,
+        ret: Math.round(total * 10) / 10,
+      };
+    }
+  }
+  aiWarm = true;
+  s1.last = null;
+  document.getElementById('btnRunAI').disabled = false;
+  logRow(`又练了 50 回合（累计 <b>${s1.trained} 回合</b>）。点「让它自己走」看看这次走几步。`);
+  document.getElementById('m2state').textContent = '已学会，等它走';
+  buildReplayUI();
+  render();
+}
+
+function runAI() {
+  if (!aiWarm) return;
+  clearInterval(aiTimer);
+  const path = [];
+  let st = START.slice();
+  for (let t = 0; t < 40; t++) {
+    const v = qq[key(st)], b = Math.max(...v);
+    const idx = v.map((x, i) => (x === b ? i : -1)).filter((i) => i >= 0);
+    const a = idx[Math.floor(Math.random() * idx.length)];
+    const [nxt, r, done] = envStep(st, a);
+    path.push([nxt.slice(), a, r]);
+    st = nxt;
+    if (done) break;
+  }
+  let i = 0;
+  s1.state = START.slice();
+  s1.aiScore = 0;
+  document.querySelector('#racerAI em').textContent = '0.0 分';
+  s1.phase = 'ai';
+  document.getElementById('btnTrain').disabled = true;
+  aiTimer = setInterval(() => {
+    const [pos, act, rew] = path[i];
+    s1.state = pos.slice();
+    s1.aiScore = Math.round((s1.aiScore + rew) * 10) / 10;
+    document.querySelector('#racerAI b').textContent = (i + 1) + ' 步';
+    document.querySelector('#racerAI em').textContent = s1.aiScore.toFixed(1) + ' 分';
+    if (i < 3) logRow(`它选了「${ANAME[act]}」，现在在${posText(pos)}。`);
+    render();
+    i++;
+    if (i >= path.length) {
+      clearInterval(aiTimer);
+      s1.ai = path.length;
+      document.querySelector('#racerAI b').textContent = s1.ai + ' 步';
+      document.querySelector('#racerAI em').textContent = s1.aiScore.toFixed(1) + ' 分';
+      document.getElementById('btnTrain').disabled = false;
+      if (!near(s1.state, GOAL)) {
+        logRow(`它这次没走到终点 —— 累计才 ${s1.trained} 回合，再点一次「让它学 50 回合」。`);
+        addRecord('它', s1.ai, s1.aiScore, `${s1.trained} 回合`);
+        s1.ai = null;
+      } else {
+        addRecord('它', s1.ai, s1.aiScore, `${s1.trained} 回合`);
+      }
+      finishRace();
+    }
+  }, 220);
+}
+
+document.querySelectorAll('.dpad button').forEach((b) => {
+  b.onclick = () => { if (cur === 2) youMove(Number(b.dataset.dir)); };
+});
+document.addEventListener('keydown', (e) => {
+  if (cur !== 2) {
+    if (e.key === 'ArrowRight') go(cur + 1);
+    if (e.key === 'ArrowLeft') go(cur - 1);
+    return;
+  }
+  const map = { ArrowUp: 0, ArrowDown: 1, ArrowLeft: 2, ArrowRight: 3 };
+  if (e.key in map) { e.preventDefault(); youMove(map[e.key]); }
+});
+document.getElementById('btnTrain').onclick = trainAI;
+document.getElementById('btnRunAI').onclick = runAI;
+document.getElementById('btnRestart').onclick = s1reset;
+document.getElementById('btnAgain').onclick = () => {
+  if (aiTimer) clearInterval(aiTimer);
+  s1.you = null; s1.youScore = 0; s1.done = false;
+  s1.inspect = null; s1.inspectInfo = null; s1.touched = new Set();
+  s1.state = START.slice();
+  document.querySelector('#racerYou b').textContent = '—';
+  document.querySelector('#racerYou em').textContent = '0.0 分';
+  document.getElementById('m2state').textContent = '轮到你走';
+  logRow('回到起点。这次试试能不能比刚才少走几步。');
+  render();
+};
+
+/* ── 看它怎么学会的：分段回放 ── */
+let replayTimer = null;
+
+function buildReplayUI() {
+  const box = document.getElementById('replayBtns');
+  box.innerHTML = '';
+  document.getElementById('replayBox').style.display = 'block';
+  Object.keys(s1.snaps).map(Number).forEach((ep) => {
+    const b = document.createElement('button');
+    b.textContent = `第 ${ep} 回合`;
+    b.onclick = () => replayEpisode(ep, b);
+    box.appendChild(b);
+  });
+  drawSpark();
+}
+
+function drawSpark() {
+  const cv = document.getElementById('spark');
+  if (!cv.clientWidth) return;
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const w = cv.clientWidth, h = cv.clientHeight;
+  cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
+  const ctx = cv.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, w, h);
+  const data = s1.epReturns || [];
+  if (!data.length) return;
+  const max = Math.max(...data, 10);
+  const min = Math.min(...data, -14);
+  const pad = { l: 4, r: 4, t: 4, b: 14 };
+  const pw = w - pad.l - pad.r, ph = h - pad.t - pad.b;
+  const bw = pw / data.length;
+  const y0 = pad.t + ph * (1 - (0 - min) / (max - min));
+  ctx.fillStyle = '#e8b26e';
+  data.forEach((v, i) => {
+    const x = pad.l + i * bw;
+    const y = pad.t + ph * (1 - (v - min) / (max - min));
+    ctx.fillRect(x, Math.min(y, y0), Math.max(bw - 1, 1), Math.max(Math.abs(y - y0), 1));
+  });
+  ctx.fillStyle = '#8894a1';
+  ctx.font = '9px -apple-system, sans-serif';
+  ctx.fillText('每一回合的得分（越靠右是练得越多之后）', pad.l, h - 3);
+}
+
+function replayEpisode(ep, btn) {
+  clearInterval(replayTimer);
+  document.querySelectorAll('#replayBtns button').forEach((x) => x.classList.toggle('on', x === btn));
+  const snap = s1.snaps[ep];
+  s1.replayQ = snap.q;
+  s1.replayMarks = [];
+  s1.inspect = null;
+  s1.state = START.slice();
+  let i = 0;
+  replayTimer = setInterval(() => {
+    const step = snap.path[i];
+    if (!step) {
+      clearInterval(replayTimer);
+      logRow(`第 ${ep} 回合走完：${snap.path.length} 步，得 ${snap.ret} 分。`);
+      s1.replayQ = null;
+      s1.replayMarks = [];
+      render();
+      return;
+    }
+    s1.state = step.pos.slice();
+    s1.replayMarks.push({ pos: step.pos.slice(), explored: step.explored });
+    render();
+    i += 1;
+  }, 170);
+}
+
+function render() {
+  const svg = document.getElementById('grid');
+  const CELL = 50, PAD = 6, GAP = 4;
+  const parts = [];
+  const size = W * CELL + (W - 1) * GAP;
+
+  for (let r = 0; r < H; r++) {
+    for (let c = 0; c < W; c++) {
+      const x = PAD + c * (CELL + GAP), y = PAD + r * (CELL + GAP);
+      const isPit = r === PIT[0] && c === PIT[1];
+      const isGoal = r === GOAL[0] && c === GOAL[1];
+      const isCur = s1.state[0] === r && s1.state[1] === c;
+      const mine = s1.touched.has(r * W + c);
+      const tableNow = s1.replayQ || qq;
+      const vals = tableNow[r * W + c];
+      const kk = r * W + c;
+      // 只在「试过的方向」里挑最高分：没试过的方向还是 0，不能拿它当最优
+      let best = -Infinity, bestA = -1;
+      for (let a = 0; a < 4; a++) {
+        if (qvis[kk * 4 + a] > 0 && vals[a] > best) { best = vals[a]; bestA = a; }
+      }
+      const learned = bestA >= 0;
+      const strong = learned && Math.abs(best) >= 0.05;   // 分够大才用实色，太小用浅灰表示「还不可信」
+
+      parts.push(`<rect x="${x}" y="${y}" width="${CELL}" height="${CELL}" rx="8"
+        fill="${isPit ? '#fbeceb' : isGoal ? '#eaf5f0' : '#fbfcfd'}"
+        stroke="${isCur ? '#d98324' : '#eef1f5'}" stroke-width="${isCur ? 2 : 1}"/>`);
+      if (mine) parts.push(`<circle cx="${x + CELL - 7}" cy="${y + 7}" r="2.6" fill="#7aa7cc"/>`);
+      if (s1.replayMarks) {
+        const m = s1.replayMarks.find((mm) => mm.pos[0] === r && mm.pos[1] === c);
+        if (m) parts.push(`<circle cx="${x + 7}" cy="${y + 7}" r="2.4" fill="${m.explored ? '#e08a1e' : '#1f8a70'}"/>`);
+      }
+
+      if (isPit) {
+        parts.push(`<text x="${x + CELL / 2}" y="${y + CELL / 2 + 7}" text-anchor="middle" font-size="18" fill="#b8412f">×</text>`);
+      } else if (isGoal) {
+        parts.push(`<rect x="${x + CELL / 2 - 7}" y="${y + 11}" width="3" height="24" fill="#1f7a60"/>`);
+        parts.push(`<path d="M${x + CELL / 2 - 4} ${y + 12} L${x + CELL / 2 + 15} ${y + 18} L${x + CELL / 2 - 4} ${y + 25} Z" fill="#1f7a60"/>`);
+      } else if (!learned) {
+        parts.push(`<text x="${x + CELL / 2}" y="${y + CELL / 2 + 4}" text-anchor="middle" font-size="12" fill="#e1e7ee">·</text>`);
+      } else {
+        const idx = bestA;
+        const col = strong ? (best >= 0 ? '#1f7a60' : '#b8412f') : '#aab6c2';
+        parts.push(`<text x="${x + CELL / 2}" y="${y + CELL / 2 + 4}" text-anchor="middle" font-size="18"
+          fill="${col}" opacity="${strong ? 0.85 : 0.6}">${ARROW[idx]}</text>`);
+        parts.push(`<text x="${x + CELL / 2}" y="${y + CELL - 8}" text-anchor="middle" font-size="8.5"
+          fill="${strong ? '#8894a1' : '#b8c0ca'}" font-family="var(--mono)">${Math.abs(best) < 1 ? best.toFixed(2) : best.toFixed(1)}</text>`);
+      }
+    }
+  }
+
+  const ax = PAD + s1.state[1] * (CELL + GAP) + CELL / 2;
+  const ay = PAD + s1.state[0] * (CELL + GAP) + CELL / 2;
+  parts.push(`<circle cx="${ax}" cy="${ay}" r="12" fill="#d98324" opacity="0.15"/>`);
+  parts.push(`<circle cx="${ax}" cy="${ay}" r="6.5" fill="#d98324"/>`);
+
+  svg.setAttribute('viewBox', `0 0 ${size + PAD * 2} ${size + PAD + 6}`);
+  svg.innerHTML = parts.join('');
+
+  const shown = s1.inspect || s1.state;
+  const vals = (s1.replayQ || qq)[key(shown)];
+  const cap = document.getElementById('qcaption');
+  if (s1.inspect && s1.inspectInfo) {
+    const b = s1.inspectInfo;
+    cap.innerHTML = `你刚才改动最大的一格是${posText(shown)}的「${ANAME[b.a]}」：
+      <b>${b.old.toFixed(2)} → ${b.nw.toFixed(2)}</b>。一次只挪这么一小步，所以要练很多趟才准。
+      <br><span style="color:var(--ink-faint)">越靠近起点，格子上的数越小 —— 它们只知道「走一步要扣 0.1」，
+      还不知道终点有 10 分。好处是一步一步往回传的。</span>`;
+  } else if (near(s1.state, GOAL)) {
+    cap.innerHTML = '这里是终点，走到就算赢。终点这一格不用打分 —— 到了就结束了，没有「下一步」要比。';
+  } else if (near(s1.state, PIT)) {
+    cap.innerHTML = '这里是坑，掉进来就结束。坑这一格也不用打分。';
+  } else if (aiWarm) {
+    const best = Math.max(...vals);
+    const tie = vals.filter((v) => v === best).length > 1;
+    cap.innerHTML = tie
+      ? `它现在在${posText(s1.state)}。四个方向的分一样高（都是 ${best.toFixed(1)} 分），说明这一格它还没分出好坏，只能随便挑一个。`
+      : `它现在在${posText(s1.state)}。四个方向里，「${ANAME[vals.indexOf(best)]}」的分最高（${best.toFixed(1)} 分），所以它下次最想往那边走。`;
+  } else {
+    cap.innerHTML = `它现在在${posText(s1.state)}。这四个方向它都还没走过，所以四个都是 0 分 —— 只能瞎猜。`;
+  }
+  const shownK = key(shown);
+  document.getElementById('qmini').innerHTML = vals.map((v, i) => {
+    const tried = qvis[shownK * 4 + i] > 0;
+    return `<div class="qcell">
+      <span class="dir">${ARROW[i]} ${ANAME[i]}</span>
+      <span class="num">${tried ? v.toFixed(2) : '—'}</span>
+      <span class="unit">${tried ? '分' : '没试过'}</span>
+    </div>`;
+  }).join('');
+}
+
+s1reset();
+
+/* ════════════════════════════════════════════════════════════
+   第二关：撑爆表格
+   ════════════════════════════════════════════════════════════ */
+const dim = document.getElementById('dim');
+dim.oninput = () => {
+  const d = Number(dim.value);
+  document.getElementById('dimv').textContent = String(d);
+  document.getElementById('rows').innerHTML = `10<sup style="font-size:0.62em;vertical-align:super;">${d}</sup>`;
+  document.getElementById('rowsRead').innerHTML = `= 1 后面跟 <b>${d} 个零</b>，也就是 ${d + 1} 位数`;
+  const note = document.getElementById('rowsNote');
+  const boom = document.getElementById('boom');
+  if (d < 6) note.textContent = '这个规模还能用表格，格子世界就是这种量级。';
+  else if (d < 12) note.textContent = '理论上还存得下，但已经没人这么干了。';
+  else if (d < 81) note.textContent = '地球上所有硬盘加起来也不够。继续拖。';
+  else note.textContent = '比宇宙里的原子还多。';
+  boom.style.display = d >= 81 ? 'block' : 'none';
+  document.getElementById('m3state').textContent = d >= 81 ? '通关' : `${d} 维`;
+  if (d >= 81) mark('s3');
+};
+dim.oninput();
+
+function drawCurve() {
+  const cv = document.getElementById('curve');
+  if (!cv || !cv.clientWidth) return;
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const w = cv.clientWidth, h = cv.clientHeight;
+  cv.width = w * dpr; cv.height = h * dpr;
+  const ctx = cv.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, w, h);
+
+  const pad = { l: 34, r: 10, t: 12, b: 22 };
+  const pw = w - pad.l - pad.r, ph = h - pad.t - pad.b;
+  const X = (t) => pad.l + pw * ((t + 20) / 40);
+  const Y = (v) => pad.t + ph * (1 - (v + 25) / 50);
+
+  ctx.strokeStyle = '#eef1f5'; ctx.lineWidth = 1;
+  for (const gy of [-20, 0, 20]) {
+    ctx.beginPath(); ctx.moveTo(pad.l, Y(gy)); ctx.lineTo(w - pad.r, Y(gy)); ctx.stroke();
+    ctx.fillStyle = '#b8c0ca'; ctx.font = '9px -apple-system, sans-serif';
+    ctx.fillText(gy + '°', 5, Y(gy) + 3);
+  }
+
+  const table = [[-20, -18], [-10, -9], [0, 0], [10, 9], [20, 18]];
+  ctx.strokeStyle = '#b8c0ca'; ctx.lineWidth = 2;
+  ctx.beginPath();
+  for (let i = 0; i < table.length; i++) {
+    const [t, v] = table[i];
+    const x0 = X(t), y0 = Y(v);
+    if (i === 0) ctx.moveTo(x0, y0);
+    else { ctx.lineTo(x0, Y(table[i - 1][1])); ctx.lineTo(x0, y0); }
+  }
+  ctx.stroke();
+  table.forEach(([t, v]) => {
+    ctx.fillStyle = '#fff'; ctx.strokeStyle = '#b8c0ca'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(X(t), Y(v), 3.2, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  });
+
+  ctx.strokeStyle = '#d98324'; ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  for (let t = -20; t <= 20; t += 0.5) {
+    const v = 22 * Math.tanh(t / 12);
+    t === -20 ? ctx.moveTo(X(t), Y(v)) : ctx.lineTo(X(t), Y(v));
+  }
+  ctx.stroke();
+
+  ctx.fillStyle = '#d98324';
+  ctx.fillRect(pad.l + 6, pad.t + 6, 10, 3);
+  ctx.fillText('函数（神经网络）', pad.l + 20, pad.t + 11);
+  ctx.fillStyle = '#8894a1';
+  ctx.fillRect(pad.l + 6, pad.t + 22, 10, 3);
+  ctx.fillText('查表', pad.l + 20, pad.t + 27);
+
+  ctx.fillStyle = '#b8c0ca';
+  ctx.fillText('身体前倾角 →', pad.l, h - 6);
+}
+
+/* ════════════════════════════════════════════════════════════
+   第三关：找漏洞
+   ════════════════════════════════════════════════════════════ */
+const UPRIGHT = 0.98, ACTMAG = 0.35;
+const found = new Set();
+
+function updReward() {
+  const a = Number(document.getElementById('wAlive').value);
+  const u = Number(document.getElementById('wUp').value);
+  const p = Number(document.getElementById('wAct').value);
+  document.getElementById('vAlive').textContent = a.toFixed(2);
+  document.getElementById('vUp').textContent = u.toFixed(2);
+  document.getElementById('vAct').textContent = p.toFixed(3);
+
+  const up = u * UPRIGHT, pen = p * ACTMAG * ACTMAG;
+  const total = a + up - pen;
+  document.getElementById('rewardVal').innerHTML = `${total.toFixed(2)}<span style="font-size:14px;color:var(--ink-faint);letter-spacing:0;"> 分</span>`;
+  document.getElementById('rewardFormula').textContent =
+    `这一次的分数 = 活着 ${a.toFixed(2)}\n` +
+    `           + 站直 ${u.toFixed(2)} × 0.98\n` +
+    `           − 乱动 ${p.toFixed(3)} × 0.35 × 0.35\n` +
+    `         = ${a.toFixed(2)} + ${up.toFixed(2)} − ${pen.toFixed(3)}\n` +
+    `         = ${total.toFixed(2)} 分`;
+
+  const el = document.getElementById('prediction');
+  let kind = null, msg = '';
+  if (a < 0.15) {
+    kind = 'lie'; msg = '<b>躺平。</b>躺着也能拿到「站直」那部分分，还省力气。训出来的策略会瘫在地上。';
+  } else if (p < 0.004) {
+    kind = 'shake'; msg = '<b>抽搐。</b>动作不扣分了，抖着也能活，还能多拿站直分。出来是个癫痫鸭子。';
+  } else if (u > 1.2) {
+    kind = 'lock'; msg = '<b>锁死。</b>站直权重太高，它宁可僵硬站着也不敢迈步。稳，但动不了。';
+  } else {
+    msg = '这个配比是训练用的原版：站着有奖励，倒下结束，乱动略扣分。三股力互相制衡，才有「站着还能微调」的行为。';
+  }
+  el.className = 'note' + (kind ? ' warn' : ' good');
+  el.innerHTML = msg;
+
+  // 让鸭子当场演一遍
+  behaviorKind = kind || 'normal';
+  const bnote = document.getElementById('behaviorNote');
+  if (bnote) {
+    bnote.className = 'note' + (kind ? ' warn' : '');
+    bnote.innerHTML = {
+      lie: '练出来的样子：<b>躺平不动</b>。它发现躺着也有分，还省力气。',
+      shake: '练出来的样子：<b>高频抽搐</b>。动作不要钱了，抖着也能活。',
+      lock: '练出来的样子：<b>关节锁死</b>。站着最安全，但也动不了。',
+      normal: '练出来的样子：<b>站直 + 小幅微调</b>。三股力刚好互相制衡。',
+    }[behaviorKind];
+  }
+
+  // 正在生效的那一种：橙色实心；找到过的：绿色打勾（这是记录，不会消失）
+  document.querySelectorAll('.badge').forEach((b) => b.classList.toggle('live', b.dataset.b === kind));
+  if (kind && !found.has(kind)) {
+    found.add(kind);
+    const badge = document.querySelector(`.badge[data-b="${kind}"]`);
+    badge.classList.add('on');
+    badge.textContent = '✓ ' + badge.textContent;
+    document.getElementById('m4state').textContent = `已找到 ${found.size} / 3`;
+    if (found.size === 3) mark('s4');
+  }
+}
+['wAlive', 'wUp', 'wAct'].forEach((id) => { document.getElementById(id).oninput = updReward; });
+
+document.getElementById('btnResetW').onclick = () => {
+  const defs = { wAlive: 1, wUp: 0.5, wAct: 0.02 };
+  for (const [id, v] of Object.entries(defs)) document.getElementById(id).value = String(v);
+  updReward();
+};
+updReward();
+
+/* ════════════════════════════════════════════════════════════
+   第四关：真实训练曲线 + 会站会倒的鸭子
+   ════════════════════════════════════════════════════════════ */
+let H4 = null;
+const s4 = { ep: 0, playing: false, timer: null };
+
+async function loadHistory() {
+  if (H4) return H4;
+  const d = await (await fetch('./runs/train_history.json')).json();
+  const lens = d.lens;
+  const ma = lens.map((_, i) => {
+    const seg = lens.slice(Math.max(0, i - 29), i + 1);
+    return seg.reduce((x, y) => x + y, 0) / seg.length;
+  });
+  const turn = ma.findIndex((v) => v >= 100);
+  H4 = { lens, ma, turn: turn < 0 ? 1500 : turn };
+  return H4;
+}
+
+function drawChart4() {
+  const cv = document.getElementById('chart4');
+  if (!cv || !cv.clientWidth || !H4) return;
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const w = cv.clientWidth, h = cv.clientHeight;
+  if (cv.width !== Math.round(w * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
+  const ctx = cv.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, w, h);
+
+  const pad = { l: 40, r: 12, t: 10, b: 20 };
+  const pw = w - pad.l - pad.r, ph = h - pad.t - pad.b;
+  const n = H4.lens.length;
+  const X = (i) => pad.l + pw * (i / (n - 1));
+  const Y = (v) => pad.t + ph * (1 - v / 520);
+
+  ctx.strokeStyle = '#eef1f5';
+  ctx.lineWidth = 1;
+  for (const gy of [0, 250, 500]) {
+    ctx.beginPath(); ctx.moveTo(pad.l, Y(gy)); ctx.lineTo(w - pad.r, Y(gy)); ctx.stroke();
+    ctx.fillStyle = '#b8c0ca'; ctx.font = '9px -apple-system, sans-serif';
+    ctx.fillText(String(gy), 8, Y(gy) + 3);
+  }
+
+  ctx.strokeStyle = '#d7dde4'; ctx.lineWidth = 0.8;
+  ctx.beginPath();
+  H4.lens.forEach((v, i) => (i ? ctx.lineTo(X(i), Y(v)) : ctx.moveTo(X(i), Y(v))));
+  ctx.stroke();
+
+  ctx.strokeStyle = '#d98324'; ctx.lineWidth = 2;
+  ctx.beginPath();
+  H4.ma.forEach((v, i) => (i ? ctx.lineTo(X(i), Y(v)) : ctx.moveTo(X(i), Y(v))));
+  ctx.stroke();
+
+  // 竖线
+  const x = X(s4.ep);
+  ctx.strokeStyle = 'rgba(217,131,36,0.9)';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([3, 3]);
+  ctx.beginPath(); ctx.moveTo(x, pad.t); ctx.lineTo(x, h - pad.b); ctx.stroke();
+  ctx.setLineDash([]);
+  const yv = Y(H4.lens[s4.ep]);
+  ctx.fillStyle = '#d98324';
+  ctx.beginPath(); ctx.arc(x, yv, 3.5, 0, Math.PI * 2); ctx.fill();
+
+  ctx.fillStyle = '#8894a1';
+  ctx.font = '10px -apple-system, sans-serif';
+  ctx.fillText('第 1 回合', pad.l, h - 5);
+  ctx.fillText('第 ' + n + ' 回合', w - pad.r - 62, h - 5);
+}
+
+function updateK4() {
+  if (!H4) return;
+  document.getElementById('k4ep').textContent = String(s4.ep + 1);
+  document.getElementById('k4len').textContent = H4.lens[s4.ep] + ' 步';
+  document.getElementById('k4ma').textContent = Math.round(H4.ma[s4.ep]) + ' 步';
+}
+
+async function setEp(ep) {
+  await loadHistory();
+  s4.ep = Math.max(0, Math.min(H4.lens.length - 1, ep));
+  drawChart4();
+  updateK4();
+}
+
+function chartEpFromEvent(e) {
+  const cv = document.getElementById('chart4');
+  const r = cv.getBoundingClientRect();
+  const padL = 40, padR = 12;
+  const t = (e.clientX - r.left - padL) / (r.width - padL - padR);
+  return Math.round(Math.max(0, Math.min(1, t)) * (H4.lens.length - 1));
+}
+
+(async function initS4() {
+  await loadHistory();
+  await setEp(H4.turn);
+  const cv = document.getElementById('chart4');
+  cv.addEventListener('pointerdown', (e) => { s4.timer && stopPlay4(); setEp(chartEpFromEvent(e)); });
+  cv.addEventListener('pointermove', (e) => { if (e.buttons) setEp(chartEpFromEvent(e)); });
+
+  document.getElementById('btnPlay4').onclick = () => {
+    if (s4.playing) { stopPlay4(); return; }
+    s4.playing = true;
+    document.getElementById('btnPlay4').textContent = '暂停';
+    s4.ep = 0;
+    s4.timer = setInterval(() => {
+      s4.ep = Math.min(H4.lens.length - 1, s4.ep + Math.ceil(H4.lens.length / 260));
+      drawChart4();
+      updateK4();
+      if (s4.ep >= H4.lens.length - 1) stopPlay4();
+    }, 40);
+  };
+
+  document.getElementById('btnCheck4').onclick = () => {
+    const diff = Math.abs(s4.ep - H4.turn);
+    const note = document.getElementById('r4note');
+    if (diff <= 300) {
+      note.className = 'note good';
+      note.innerHTML = `<b>中了。</b>你选第 ${s4.ep + 1} 回合，真实拐点是第 ${H4.turn + 1} 回合（30 回合平均第一次超过 100 步）。<br>
+        在这之前它一直在 40 步上下打转，之后 1300 个回合里冲到 500 步。`;
+      mark('s5');
+      document.getElementById('m5state').textContent = '已通关';
+    } else {
+      note.className = 'note warn';
+      note.innerHTML = `<b>差 ${diff} 回合。</b>你选第 ${s4.ep + 1} 回合，真实拐点是第 ${H4.turn + 1} 回合。<br>
+        找法：拖动竖线，看下面的鸭子什么时候从「一会儿就倒」变成「站得住」。`;
+    }
+  };
+})();
+
+function stopPlay4() {
+  s4.playing = false;
+  clearInterval(s4.timer);
+  document.getElementById('btnPlay4').textContent = '播放训练';
+}
+
+async function renderS4(t) {
+  if (!H4) return;
+  const v = await ensureView('duck4', { dist: 0.42, azim: 0.95, elev: 0.20, targetZ: 0.08 });
+  if (!v) return;
+  const len = H4.lens[s4.ep] || 40;
+  const stable = Math.min(1, len / 500);
+  const wob = (1 - stable) * 0.32;
+  let tipX = Math.sin(t * 3.1) * wob;
+  let lift = 0;
+  if (stable < 0.38) {
+    const cyc = (t * 0.55) % 1;
+    if (cyc > 0.7) {
+      const p = (cyc - 0.7) / 0.3;
+      tipX = 0.05 + p * 1.1;
+      lift = -p * 0.02;
+    }
+  }
+  v.pose({ tipX });
+  v.render();
+}
+
+/* ── 第五关：两只鸭子按真实高度播放 ── */
+const s5a = { idx: 0, data: null };
+const s5b = { idx: 0, data: null };
+
+function resetS5Ducks() {
+  s5a.idx = 0; s5b.idx = 0;
+}
+
+async function renderS5() {
+  const va = await ensureView('duck5a', { dist: 0.40, azim: 0.95, elev: 0.18, targetZ: 0.075 });
+  const vb = await ensureView('duck5b', { dist: 0.40, azim: 0.95, elev: 0.18, targetZ: 0.075 });
+  const draw = (v, st, cap) => {
+    if (!v) return;
+    if (!st.data) {
+      v.pose({});
+      v.render();
+      document.getElementById(cap).textContent = '还没揭晓';
+      return;
+    }
+    const hs = st.data.height_cm;
+    const us = st.data.upright || [];
+    const i = Math.min(st.idx, hs.length - 1);
+    const u = us[i] ?? 1;
+    const tilt = Math.acos(Math.max(-1, Math.min(1, u)));   // 0 = 站直
+    v.pose({ tipY: -tilt * 1.05 });
+    v.render();
+    const done = st.idx >= hs.length - 1;
+    document.getElementById(cap).innerHTML =
+      `${Math.min(i + 1, hs.length)} 步` +
+      (done ? (u < 0.75 ? ' · <b style="color:#b8412f">倒了</b>' : ' · <b style="color:#1f7a60">站着</b>') : '');
+  };
+  draw(va, s5a, 'cap5a');
+  draw(vb, s5b, 'cap5b');
+}
+
+let s5Timer = null;
+function playBoth() {
+  s5a.idx = 0;
+  s5b.idx = 0;
+  clearInterval(s5Timer);
+  const maxLen = Math.max(s5a.data ? s5a.data.height_cm.length : 0, s5b.data ? s5b.data.height_cm.length : 0);
+  s5Timer = setInterval(() => {
+    s5a.idx = Math.min(s5a.idx + 1, s5a.data ? s5a.data.height_cm.length - 1 : 0);
+    s5b.idx = Math.min(s5b.idx + 1, s5b.data ? s5b.data.height_cm.length - 1 : 0);
+    if (s5a.idx >= maxLen - 1 && s5b.idx >= maxLen - 1) clearInterval(s5Timer);
+  }, 16);
+}
+
+/* ════════════════════════════════════════════════════════════
+   第五关：押注 + 两条真实轨迹
+   ════════════════════════════════════════════════════════════ */
+let TRACES = null, currentTrace = 'nopolicy', bet = null;
+const ANSWER = 40;
+
+async function loadTraces() {
+  if (!TRACES) TRACES = await (await fetch('./runs/eval_traces.json')).json();
+  return TRACES;
+}
+
+document.querySelectorAll('.bet').forEach((b) => {
+  b.onclick = () => {
+    bet = Number(b.dataset.v);
+    document.querySelectorAll('.bet').forEach((x) => x.classList.remove('picked', 'right', 'wrong'));
+    b.classList.add('picked');
+    document.getElementById('m6state').textContent = `押了 ${bet} 步`;
+    document.getElementById('traceNote').textContent = '好，点下面两个按钮揭晓。';
+  };
+});
+
+document.getElementById('btnDet').onclick = () => reveal('nopolicy');
+document.getElementById('btnSample').onclick = () => reveal('policy');
+
+async function reveal(which) {
+  await drawTrace(which);
+  const all = await loadTraces();
+  s5a.data = all.nopolicy;
+  s5b.data = all.policy;
+  playBoth();
+  const note = document.getElementById('traceNote');
+  if (which === 'policy') {
+    note.className = 'note good';
+    note.innerHTML = `<b>打开策略：500 步，站满 10 秒。</b>它干的事情只发生在一处 —— 每 20 毫秒看一眼 36 个数字，
+      给 14 个关节重新分配目标角。物理一点没变。`;
+    return;
+  }
+  if (bet === null) {
+    note.textContent = '还没押注。先在上面选一个。';
+    return;
+  }
+  const ok = Math.abs(ANSWER - bet) <= 50;
+  document.querySelectorAll('.bet').forEach((b) => {
+    const v = Number(b.dataset.v);
+    b.classList.remove('right', 'wrong');
+    if (v === bet) b.classList.add(ok ? 'right' : 'wrong');
+  });
+  note.className = 'note ' + (ok ? 'good' : 'warn');
+  note.innerHTML = ok
+    ? `<b>押对了：${ANSWER} 步就倒。</b>不到 1 秒。没有策略的时候，这套腿就是一堆会倒的连杆。`
+    : `<b>是 ${ANSWER} 步，你押了 ${bet}。</b>不到 1 秒就倒 —— 这就是「没有策略」的代价。`;
+  if (ok) mark('s6');
+}
+
+function clearTrace() {
+  const cv = document.getElementById('trace');
+  if (!cv.clientWidth) return;
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  cv.width = cv.clientWidth * dpr; cv.height = cv.clientHeight * dpr;
+  const ctx = cv.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  ctx.fillStyle = '#b8c0ca';
+  ctx.font = '13px -apple-system, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('先押一注，再点下面的按钮揭晓结果', cv.clientWidth / 2, cv.clientHeight / 2);
+}
+
+async function drawTrace(which) {
+  currentTrace = which;
+  const cv = document.getElementById('trace');
+  if (!cv.clientWidth) return;
+  let data;
+  try { data = (await loadTraces())[which]; } catch (e) { return; }
+
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const w = cv.clientWidth, h = cv.clientHeight;
+  cv.width = w * dpr; cv.height = h * dpr;
+  const ctx = cv.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, w, h);
+
+  const pad = { l: 38, r: 12, t: 12, b: 22 };
+  const pw = w - pad.l - pad.r, ph = h - pad.t - pad.b;
+  const X = (i) => pad.l + pw * (i / 500);
+  const Y = (cm) => pad.t + ph * (1 - cm / 14);
+
+  ctx.strokeStyle = '#eef1f5'; ctx.lineWidth = 1;
+  for (const gy of [0, 7, 14]) {
+    ctx.beginPath(); ctx.moveTo(pad.l, Y(gy)); ctx.lineTo(w - pad.r, Y(gy)); ctx.stroke();
+    ctx.fillStyle = '#b8c0ca'; ctx.font = '9px -apple-system, sans-serif';
+    ctx.fillText(gy + 'cm', 4, Y(gy) + 3);
+  }
+
+  // 两条都画出来，方便直接对比；刚点的那条更粗
+  const all = await loadTraces();
+  const order = which === 'nopolicy' ? ['policy', 'nopolicy'] : ['nopolicy', 'policy'];
+  for (const k of order) {
+    const t2 = all[k];
+    if (!t2) continue;
+    const active = k === which;
+    ctx.strokeStyle = k === 'nopolicy' ? (active ? '#b8412f' : 'rgba(184,65,47,0.35)') : (active ? '#1f7a60' : 'rgba(31,122,96,0.35)');
+    ctx.lineWidth = active ? 2.2 : 1.4;
+    ctx.beginPath();
+    t2.height_cm.forEach((v, i) => (i ? ctx.lineTo(X(i), Y(v)) : ctx.moveTo(X(i), Y(v))));
+    ctx.stroke();
+    if (t2.steps < 500) {
+      const x = X(t2.steps - 1), y = Y(t2.height_cm[t2.height_cm.length - 1]);
+      ctx.fillStyle = '#b8412f';
+      ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2); ctx.fill();
+      ctx.font = '10.5px -apple-system, sans-serif';
+      ctx.fillText('这里倒了', x - 54, y - 8);
+    }
+  }
+  const hs = data.height_cm;
+
+  document.getElementById('kSteps').textContent = data.steps + ' 步';
+  document.getElementById('kFall').textContent = data.steps >= 500 ? '没倒' : '倒了';
+  const mn = Math.min(...hs), mx = Math.max(...hs);
+  document.getElementById('kSwing').textContent = (mx - mn).toFixed(1) + ' cm';
+  document.getElementById('kSec').textContent = (data.steps * 0.02).toFixed(2) + ' s';
+
+  ctx.fillStyle = '#b8c0ca'; ctx.font = '9px -apple-system, sans-serif';
+  ctx.fillText('0', pad.l - 2, h - 5);
+  ctx.fillText('500 步（10 秒）', w - pad.r - 68, h - 5);
+}
+
+/* ════════════════════════════════════════════════════════════
+   侧视鸭子：一个可以摆姿势、会抖会躺的 2D 模型
+   ════════════════════════════════════════════════════════════ */
+function drawDuck(ctx, x, groundY, o = {}) {
+  const sc = o.scale ?? 1;
+  const crouch = o.crouch ?? 0;
+  const tilt = o.tilt ?? 0;
+  const shake = o.shake ?? 0;
+  const t = o.t ?? 0;
+  const col = o.color ?? '#f0b45a';
+  const dark = o.dark ?? '#dc9c2f';
+  const legCol = o.legCol ?? '#8a94a1';
+  const alpha = o.alpha ?? 1;
+  const rot = o.rot ?? 0;
+
+  ctx.save();
+  ctx.translate(x, groundY);
+  if (rot) ctx.rotate(rot);
+  ctx.scale(sc, sc);
+  ctx.globalAlpha = alpha;
+
+  const jx = shake ? Math.sin(t * 47) * shake : 0;
+  const jy = shake ? Math.cos(t * 61) * shake * 0.6 : 0;
+
+  const hipH = 64 - crouch * 34;
+  const hip = { x: jx, y: -hipH + jy };
+  const knee = { x: hip.x + 4 + crouch * 26, y: (hip.y - 8) * 0.5 + crouch * 4 };
+  const ankle = { x: 2, y: -10 };
+  const foot = { x: 14, y: 0 };
+
+  ctx.lineCap = 'round';
+
+  ctx.strokeStyle = '#c6cfd9';
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.moveTo(hip.x - 7, hip.y + 3);
+  ctx.lineTo(knee.x - 6, knee.y + 2);
+  ctx.lineTo(ankle.x - 4, ankle.y);
+  ctx.lineTo(foot.x - 5, foot.y - 2);
+  ctx.stroke();
+
+  ctx.strokeStyle = legCol;
+  ctx.lineWidth = 4.5;
+  ctx.beginPath();
+  ctx.moveTo(hip.x, hip.y);
+  ctx.lineTo(knee.x, knee.y);
+  ctx.lineTo(ankle.x, ankle.y);
+  ctx.lineTo(foot.x, foot.y - 2);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(foot.x, foot.y - 2);
+  ctx.lineTo(foot.x + 12, foot.y - 2);
+  ctx.stroke();
+
+  ctx.save();
+  ctx.translate(hip.x, hip.y);
+  ctx.rotate(tilt);
+
+  ctx.fillStyle = col;
+  ctx.beginPath();
+  ctx.ellipse(6, -16, 26, 19, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = dark;
+  ctx.beginPath();
+  ctx.ellipse(2, -14, 15, 10, -0.2, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = col;
+  ctx.beginPath();
+  ctx.moveTo(14, -26);
+  ctx.lineTo(26, -45);
+  ctx.lineTo(35, -39);
+  ctx.lineTo(23, -19);
+  ctx.closePath();
+  ctx.fill();
+
+  // 头：绕颈部转（俯仰），再按偏航左右压扁
+  ctx.save();
+  ctx.translate(26, -46);
+  ctx.rotate(o.headPitch || 0);
+  ctx.translate(-26, 46);
+  ctx.translate(32, -51);
+  ctx.scale(o.headSquash || 1, 1);
+  ctx.translate(-32, 51);
+
+  ctx.fillStyle = col;
+  ctx.beginPath();
+  ctx.arc(32, -51, 15, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = '#e8833a';
+  ctx.beginPath();
+  ctx.moveTo(44, -53);
+  ctx.lineTo(59, -47);
+  ctx.lineTo(44, -41);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle = '#2b3742';
+  ctx.beginPath();
+  ctx.arc(38, -55, 2.4, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
+  ctx.restore();
+  ctx.restore();
+
+  // 把各关节换算成画布坐标（给红点用）
+  const cs = Math.cos(rot), sn = Math.sin(rot);
+  const toScreen = (lx, ly) => ({
+    x: x + sc * (lx * cs - ly * sn),
+    y: groundY + sc * (lx * sn + ly * cs),
+  });
+  const bodyPt = (bx, by) => ({
+    x: hip.x + bx * Math.cos(tilt) - by * Math.sin(tilt),
+    y: hip.y + bx * Math.sin(tilt) + by * Math.cos(tilt),
+  });
+  const neck = bodyPt(24, -34);
+  const hp = bodyPt(29, -66);
+  const hy = bodyPt(48, -50);
+  return {
+    hits: [
+      { id: 'hip_pitch', ...toScreen(hip.x + 8, hip.y - 2) },
+      { id: 'knee', ...toScreen(knee.x, knee.y) },
+      { id: 'ankle', ...toScreen(ankle.x, ankle.y) },
+      { id: 'neck_pitch', ...toScreen(neck.x, neck.y) },
+      { id: 'head_pitch', ...toScreen(hp.x, hp.y) },
+      { id: 'head_yaw', ...toScreen(hy.x, hy.y) },
+    ],
+  };
+}
+
+function fitDuckCanvas(cv) {
+  if (!cv || !cv.clientWidth) return null;
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const w = cv.clientWidth, h = cv.clientHeight;
+  if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) {
+    cv.width = Math.round(w * dpr);
+    cv.height = Math.round(h * dpr);
+  }
+  const ctx = cv.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, w, h);
+  const ground = h - 16;
+  ctx.strokeStyle = '#e3e9ef';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(12, ground);
+  ctx.lineTo(w - 12, ground);
+  ctx.stroke();
+  return { ctx, w, h, ground };
+}
+
+/* ── 第一关：三维图鉴（可旋转、可拆解、可点选零件） ── */
+const JOINTS = [
+  { id: 'head_yaw', label: '头偏航', body: 'yaw_roll_motion', amp: 1.1, range: '±170°',
+    say: '转头看左右。它的头几乎能转到背后 —— 这是它最灵活的一个关节。' },
+  { id: 'head_pitch', label: '头俯仰', body: 'neck_pitch', amp: 0.85, range: '±90°',
+    say: '抬头、低头。它和脖子一起动，就能点头或者仰头看人。' },
+  { id: 'neck_pitch', label: '颈俯仰', body: 'neck', amp: 0.6, range: '−90°~60°',
+    say: '脖子前后摆。低头看地面、抬头看你 —— 这是它「看」的方式之一。' },
+  { id: 'hip_pitch', label: '髋俯仰', body: 'upper_leg_left', amp: 0.75, range: '±90°',
+    say: '大腿前后摆，迈步的主力。站直时它会故意前倾一点点，让重心落在脚掌上。' },
+  { id: 'knee', label: '膝', body: 'leg', amp: 0.95, range: '±90°',
+    say: '它没有膝盖骨，靠上下两段腿折叠。蹲下、起身全靠它 —— 等会儿你会看到它一直半蹲着。' },
+  { id: 'ankle', label: '踝', body: 'ankle_left', amp: 0.6, range: '±90°',
+    say: '脚踝。站不稳时最先动它：脚掌一转，整个人就被「扶」回来了。平衡主要靠这个关节。' },
+];
+
+const BODY_CN = {
+  trunk_base: '躯干', yaw2roll: '左髋转接件', hip_l: '左髋横滚件', upper_leg_left: '左大腿',
+  leg: '左小腿', ankle_left: '左脚掌', neck: '脖子', neck_pitch: '头部支架',
+  yaw_roll_motion: '头部转接件', jaw_soft: '头壳', bearing_roll: '右髋转接件',
+  hip_l_2: '右髋横滚件', upper_leg_right: '右大腿', leg_2: '右小腿', ankle_right: '右脚掌',
+};
+
+let A3 = null;
+
+async function initAnatomy3D() {
+  if (A3) return A3;
+  const THREE = await import('three');
+  const { OrbitControls } = await import('three/addons/OrbitControls.js');
+  const { GLTFLoader } = await import('three/addons/GLTFLoader.js');
+
+  const canvas = document.getElementById('duck3d');
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.05;
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(34, 1, 0.002, 8);
+  camera.up.set(0, 0, 1);
+  camera.position.set(0.44, -0.60, 0.33);
+
+  const controls = new OrbitControls(camera, canvas);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.08;
+  controls.minDistance = 0.22;
+  controls.maxDistance = 2.2;
+  controls.maxPolarAngle = Math.PI * 0.52;
+  controls.target.set(0, 0, 0.12);
+
+  scene.add(new THREE.HemisphereLight(0xffffff, 0xc9d3de, 1.25));
+  const key = new THREE.DirectionalLight(0xfff6e8, 2.4);
+  key.position.set(0.35, -0.45, 0.85);
+  key.castShadow = true;
+  key.shadow.mapSize.set(1024, 1024);
+  key.shadow.camera.near = 0.05;
+  key.shadow.camera.far = 3;
+  key.shadow.camera.left = -0.3; key.shadow.camera.right = 0.3;
+  key.shadow.camera.top = 0.3; key.shadow.camera.bottom = -0.3;
+  scene.add(key);
+  const fill = new THREE.DirectionalLight(0xdfe9ff, 0.85);
+  fill.position.set(-0.6, 0.5, 0.35);
+  scene.add(fill);
+
+  const gltf = await new GLTFLoader().loadAsync('../assets/duck/duck.glb');
+  const root = gltf.scene;
+  scene.add(root);
+
+  const bodies = {};
+  const meshes = [];
+  root.traverse((o) => {
+    if (o.name && o.name.startsWith('body')) bodies[o.name.slice(4)] = o;
+    if (o.isMesh) {
+      o.castShadow = true;
+      o.receiveShadow = true;
+      const parentName = o.parent && o.parent.name ? o.parent.name : '';
+      o.userData.body = parentName.startsWith('body') ? parentName.slice(4) : '';
+      if (o.material) {
+        o.material = o.material.clone();
+        o.userData.baseColor = o.material.color.clone();
+      }
+      meshes.push(o);
+    }
+  });
+
+  // 记录基准位姿 + 拆解方向
+  const CENTER = new THREE.Vector3(0, 0, 0.12);
+  const wp = new THREE.Vector3();
+  root.updateWorldMatrix(true, true);
+  for (const [name, b] of Object.entries(bodies)) {
+    b.userData.base = b.position.clone();
+    b.userData.baseQ = b.quaternion.clone();
+    b.getWorldPosition(wp);
+    const dir = wp.clone().sub(CENTER);
+    if (dir.length() < 1e-4) dir.set(0, 0, 0.2);
+    dir.normalize();
+    const inv = new THREE.Matrix4().copy(b.parent.matrixWorld).invert();
+    b.userData.dirLocal = dir.clone().transformDirection(inv);
+  }
+
+  // 取景
+  const box = new THREE.Box3().setFromObject(root);
+  const center = box.getCenter(new THREE.Vector3());
+  const size = box.getSize(new THREE.Vector3());
+  const span = Math.max(size.length(), 0.1);
+  controls.target.copy(center);
+  camera.position.copy(center).add(new THREE.Vector3(0.55, -0.8, 0.42).normalize().multiplyScalar(span * 1.35));
+  camera.updateProjectionMatrix();
+  controls.update();
+
+  function resize() {
+    const w = canvas.clientWidth, h = canvas.clientHeight;
+    if (!w || !h) return;
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+  }
+  new ResizeObserver(resize).observe(canvas);
+  resize();
+
+  A3 = { THREE, renderer, scene, camera, controls, root, bodies, meshes, sel: null, demo: null, explode: 0 };
+  window.__A3 = A3;
+  return A3;
+}
+
+function applyExplode(k) {
+  if (!A3) return;
+  A3.explode = k;
+  for (const b of Object.values(A3.bodies)) {
+    b.position.copy(b.userData.base).addScaledVector(b.userData.dirLocal, k * 0.055);
+  }
+}
+
+function pickPart(ev) {
+  if (!A3) return;
+  const THREE = A3.THREE;
+  const canvas = document.getElementById('duck3d');
+  const r = canvas.getBoundingClientRect();
+  const ndc = new THREE.Vector2(((ev.clientX - r.left) / r.width) * 2 - 1, -((ev.clientY - r.top) / r.height) * 2 + 1);
+  const ray = new THREE.Raycaster();
+  ray.setFromCamera(ndc, A3.camera);
+  const hits = ray.intersectObjects(A3.meshes, false);
+  const note = document.getElementById('partNote');
+  if (!hits.length) {
+    note.className = 'note';
+    note.innerHTML = '拖动旋转 · 滚轮缩放 · <b>点模型上任意一块</b>看它是哪个零件。拆开滑块拉回 0 就合回去。';
+    return;
+  }
+  const mesh = hits[0].object;
+  const bodyName = mesh.userData.body || '';
+  const cn = BODY_CN[bodyName] || bodyName;
+
+  // 高亮：把这一块提亮
+  for (const m of A3.meshes) if (m.material) m.material.emissive && m.material.emissive.setHex(0x000000);
+  if (mesh.material && mesh.material.emissive) {
+    mesh.material.emissive.setHex(0x5a3a10);
+    mesh.material.emissiveIntensity = 1;
+  }
+  A3.sel = bodyName;
+  note.className = 'note';
+  note.innerHTML = `这一块属于 <b>${cn}</b>。整台机器一共 70 个零件，拼成 16 段「骨骼」，14 个关节把它们连起来。`;
+}
+
+function render3D() {
+  if (!A3) return;
+  const now = performance.now() / 1000;
+
+  // 关节动作演示
+  if (A3.demo) {
+    const { body, amp, t0 } = A3.demo;
+    const e = (now - t0) % 2.2;
+    const w = Math.sin(Math.min(e / 1.1, 1) * Math.PI);
+    const b = A3.bodies[body];
+    if (b) {
+      b.quaternion.copy(b.userData.baseQ).multiply(
+        new A3.THREE.Quaternion().setFromAxisAngle(new A3.THREE.Vector3(0, 0, 1), amp * w)
+      );
+    }
+  }
+  A3.controls.update();
+  A3.renderer.render(A3.scene, A3.camera);
+}
+
+// 关节按钮
+(function buildJointButtons() {
+  const box = document.getElementById('jointbtns');
+  JOINTS.forEach((j) => {
+    const b = document.createElement('button');
+    b.textContent = j.label;
+    b.dataset.id = j.id;
+    b.onclick = async () => {
+      const a3 = await initAnatomy3D();
+      box.querySelectorAll('button').forEach((x) => x.classList.toggle('on', x === b));
+      a3.demo = { body: j.body, amp: j.amp, t0: performance.now() / 1000 };
+      const note = document.getElementById('jointNote');
+      note.className = 'note';
+      note.innerHTML = `<b>${j.label}</b>（能转 ${j.range}）：${j.say}`;
+      anatomySeen.add(j.id);
+      document.getElementById('m1state').textContent = `${anatomySeen.size} / 6`;
+      if (anatomySeen.size >= 6) mark('s1');
+    };
+    box.appendChild(b);
+  });
+})();
+
+const anatomySeen = new Set();
+
+// 交互绑定（只绑一次）
+(function bindAnatomy() {
+  const canvas = document.getElementById('duck3d');
+  let down = null;
+  canvas.addEventListener('pointerdown', (e) => { down = { x: e.clientX, y: e.clientY }; });
+  canvas.addEventListener('pointerup', (e) => {
+    if (!down) return;
+    const moved = Math.hypot(e.clientX - down.x, e.clientY - down.y);
+    down = null;
+    if (moved < 6) pickPart(e);
+  });
+  const ex = document.getElementById('explode');
+  ex.addEventListener('input', async () => {
+    await initAnatomy3D();
+    const k = Number(ex.value) / 100;
+    document.getElementById('explodev').textContent = ex.value + '%';
+    applyExplode(k);
+  });
+  document.getElementById('explode').addEventListener('dblclick', () => {
+    document.getElementById('explode').value = 0;
+    document.getElementById('explodev').textContent = '0%';
+    applyExplode(0);
+  });
+})();
+
+/* ════════════════════════════════════════════════════════════
+   共用的三维鸭子视图：模型只解析一次，各关卡各自一份 renderer
+   ════════════════════════════════════════════════════════════ */
+let D3 = null;
+
+async function loadDuck3D() {
+  if (!D3) {
+    const THREE = await import('three');
+    const { OrbitControls } = await import('three/addons/OrbitControls.js');
+    const { GLTFLoader } = await import('three/addons/GLTFLoader.js');
+    D3 = { THREE, OrbitControls, GLTFLoader, gltf: null, promise: null };
+    D3.promise = new GLTFLoader().loadAsync('../assets/duck/duck.glb');
+    D3.gltf = await D3.promise;
+  }
+  return D3;
+}
+
+async function makeDuckView(canvasId, opts = {}) {
+  const { THREE, OrbitControls, gltf } = await loadDuck3D();
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return null;
+  if (canvas.__view) return canvas.__view;
+
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.04;
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(34, 1, 0.002, 8);
+  camera.up.set(0, 0, 1);
+
+  const controls = new OrbitControls(camera, canvas);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.09;
+  controls.enablePan = false;
+  controls.minDistance = 0.22;
+  controls.maxDistance = 1.8;
+  controls.maxPolarAngle = Math.PI * 0.52;
+  controls.autoRotate = opts.autoRotate === true;
+  controls.autoRotateSpeed = 0.8;
+
+  scene.add(new THREE.HemisphereLight(0xffffff, 0xc9d3de, 1.2));
+  const key = new THREE.DirectionalLight(0xfff6e8, 2.3);
+  key.position.set(0.3, -0.4, 0.8);
+  key.castShadow = true;
+  key.shadow.mapSize.set(1024, 1024);
+  key.shadow.camera.near = 0.05;
+  key.shadow.camera.far = 3;
+  key.shadow.camera.left = -0.3; key.shadow.camera.right = 0.3;
+  key.shadow.camera.top = 0.3; key.shadow.camera.bottom = -0.3;
+  scene.add(key);
+  const fill = new THREE.DirectionalLight(0xdfe9ff, 0.8);
+  fill.position.set(-0.55, 0.45, 0.3);
+  scene.add(fill);
+  const rim = new THREE.DirectionalLight(0xffffff, 0.5);
+  rim.position.set(0.1, 0.6, 0.2);
+  scene.add(rim);
+
+  const root = gltf.scene.clone(true);
+  scene.add(root);
+
+  const bodies = {};
+  root.traverse((o) => {
+    if (o.name && o.name.startsWith('body')) bodies[o.name.slice(4)] = o;
+    if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; }
+  });
+  for (const b of Object.values(bodies)) {
+    b.userData.basePos = b.position.clone();
+    b.userData.baseQ = b.quaternion.clone();
+  }
+
+  // 取景：按模型尺寸和画布宽高比自动算距离，站着的鸭子不会切头
+  const box = new THREE.Box3().setFromObject(root);
+  const bsize = box.getSize(new THREE.Vector3());
+  const bcenter = box.getCenter(new THREE.Vector3());
+  const target = bcenter.clone();
+  controls.target.copy(target);
+
+  const az = opts.azim ?? 0.85;
+  const el = opts.elev ?? 0.30;
+  const dir = new THREE.Vector3(Math.cos(el) * Math.cos(az), Math.cos(el) * Math.sin(az), Math.sin(el));
+  function frame() {
+    const w = canvas.clientWidth || 1, h = canvas.clientHeight || 1;
+    const aspect = w / h;
+    const fov = (camera.fov * Math.PI) / 180;
+    const needV = (bsize.z / 2) / Math.tan(fov / 2) * 1.22;           // 高度够
+    const needH = (bsize.y / 2) / (Math.tan(fov / 2) * aspect) * 1.22; // 宽度够
+    const dist = Math.max(needV, needH) + 0.04;
+    camera.position.copy(target).add(dir.clone().multiplyScalar(dist));
+    camera.updateProjectionMatrix();
+  }
+
+  function resize() {
+    const w = canvas.clientWidth, h = canvas.clientHeight;
+    if (!w || !h) return;
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+    frame();
+  }
+  new ResizeObserver(resize).observe(canvas);
+  resize();
+  frame();
+
+  const qAxis = (axis, ang) => new THREE.Quaternion().setFromAxisAngle(axis, ang);
+  const AX = new THREE.Vector3(1, 0, 0);
+  const AY = new THREE.Vector3(0, 1, 0);
+  const AZ = new THREE.Vector3(0, 0, 1);
+
+  const view = {
+    THREE, renderer, scene, camera, controls, root, bodies,
+    // 整体姿态：tipX = 前后倒，tipY = 左右倒，lift = 抬高
+    pose({ tipX = 0, tipY = 0, lift = 0, shakeX = 0 } = {}) {
+      const t = bodies['trunk_base'];
+      if (!t) return;
+      // 绕「脚底」这个支点转，而不是绕躯干中心 —— 否则脚会飞起来
+      const q = qAxis(AY, tipY).multiply(qAxis(AX, tipX));
+      t.quaternion.copy(t.userData.baseQ).multiply(q);
+      const rel = t.userData.basePos.clone().applyQuaternion(q);
+      t.position.set(rel.x + shakeX, rel.y, rel.z + lift);
+    },
+    // 关节：绕局部 Z 轴转
+    joint(name, ang) {
+      const b = bodies[name];
+      if (!b) return;
+      b.quaternion.copy(b.userData.baseQ).multiply(qAxis(AZ, ang));
+    },
+    resetJoints() {
+      for (const b of Object.values(bodies)) {
+        b.quaternion.copy(b.userData.baseQ);
+        b.position.copy(b.userData.basePos);
+      }
+    },
+    render() {
+      controls.update();
+      renderer.render(scene, camera);
+    },
+  };
+  canvas.__view = view;
+  return view;
+}
+
+// 懒加载：同一块画布只建一次（缓存 promise，避免并发重复创建 WebGL 上下文）
+const viewPromises = {};
+function ensureView(id, opts) {
+  if (!viewPromises[id]) viewPromises[id] = makeDuckView(id, opts);
+  return viewPromises[id];
+}
+
+/* ── 第二关：摆姿势 ── */
+function poseIndex(hip, knee) {
+  return Math.floor(hip / 11) * 10 + Math.floor(knee / 14) + 1;
+}
+
+async function renderS2(t) {
+  const v = await ensureView('duck2', { dist: 0.50, azim: 0.95, elev: 0.20, targetZ: 0.085 });
+  if (!v) return;
+  const hip = Number(document.getElementById('hip2').value);
+  const knee = Number(document.getElementById('knee2').value);
+  const hipAng = -((hip - 26) * Math.PI) / 180;
+  const kneeAng = ((knee - 18) * Math.PI) / 180;
+  v.joint('upper_leg_left', hipAng);
+  v.joint('upper_leg_right', hipAng);
+  v.joint('leg', kneeAng);
+  v.joint('leg_2', kneeAng);
+  v.render();
+  document.getElementById('hipv').textContent = hip + '°';
+  document.getElementById('kneev').textContent = knee + '°';
+  const n = poseIndex(hip, knee);
+  document.getElementById('poseNote').innerHTML =
+    `现在这个姿势是第 <b>${n}</b> 行，总共 100 行（两个关节各切 10 档）。` +
+    (n > 1 ? ' 换个角度就是新的一行 —— 表里没记过的角度，它就没法查。' : '');
+}
+
+/* ── 第三关：它会学成什么样 ── */
+
+async function renderS3(t) {
+  const v = await ensureView('duck3', { dist: 0.54, azim: 0.95, elev: 0.24, targetZ: 0.095 });
+  if (!v) return;
+  if (behaviorKind === 'lie') {
+    v.pose({ tipY: -1.22 + Math.sin(t * 1.2) * 0.015, lift: -0.02 });
+  } else if (behaviorKind === 'shake') {
+    v.pose({ shakeX: Math.sin(t * 46) * 0.0045, tipX: 0.08 });
+  } else if (behaviorKind === 'lock') {
+    v.pose({});
+  } else {
+    v.pose({ tipX: Math.sin(t * 2.1) * 0.025 });
+  }
+  v.render();
+}
+
+let duckT0 = performance.now();
+function duckLoop(now) {
+  requestAnimationFrame(duckLoop);
+initAnatomy3D().catch((e) => console.error('3D 载入失败', e));
+  const t = (now - duckT0) / 1000;
+  if (cur === 1 && A3) render3D();
+  const cv2 = document.getElementById('duck2');
+  if (cv2 && cv2.offsetParent && cur === 3) renderS2(t);
+  const cv3 = document.getElementById('duck3');
+  if (cv3 && cv3.offsetParent && cur === 4) renderS3(t);
+  if (cur === 5) renderS4(t);
+  if (cur === 6) renderS5();
+  if (cur === 7) { renderNet(); drawGrad(); }
+}
+requestAnimationFrame(duckLoop);
+initAnatomy3D().catch((e) => console.error('3D 载入失败', e));
+
+/* ════════════════════════════════════════════════════════════
+   第七关：拆开看 —— 真实的策略网络，前向一次给你看
+   ════════════════════════════════════════════════════════════ */
+let NET = null;
+const OBS_BASE = [
+  // quat(4) + gyro(3) + 14 个关节角 + 14 个关节速度 + 高度
+  1, 0, 0, 0,
+  0, 0, 0,
+  0, -0.087266, -0.457924, -0.004940, 0.452984, 0.349066, 0.349066, 0, 0, 0, 0.087266, 0.457924, 0.004940, -0.452984,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0.12,
+];
+const OBS_NAMES = [
+  '姿态 w', '姿态 x', '姿态 y', '姿态 z',
+  '角速度 x', '角速度 y', '角速度 z',
+  '左髋偏航', '左髋横滚', '左髋俯仰', '左膝', '左踝', '颈俯仰', '头俯仰', '头偏航', '头横滚',
+  '右髋偏航', '右髋横滚', '右髋俯仰', '右膝', '右踝',
+  '左髋偏航速度', '左髋横滚速度', '左髋俯仰速度', '左膝速度', '左踝速度', '颈俯仰速度', '头俯仰速度', '头偏航速度', '头横滚速度',
+  '右髋偏航速度', '右髋横滚速度', '右髋俯仰速度', '右膝速度', '右踝速度',
+  '离地高度',
+];
+const ACT_NAMES = [
+  '左髋偏航', '左髋横滚', '左髋俯仰', '左膝', '左踝',
+  '颈俯仰', '头俯仰', '头偏航', '头横滚',
+  '右髋偏航', '右髋横滚', '右髋俯仰', '右膝', '右踝',
+];
+// 14 个输出 → 模型里对应的 body 节点
+const ACT_BODY = [
+  'yaw2roll', 'hip_l', 'upper_leg_left', 'leg', 'ankle_left',
+  'neck', 'neck_pitch', 'yaw_roll_motion', 'jaw_soft',
+  'bearing_roll', 'hip_l_2', 'upper_leg_right', 'leg_2', 'ankle_right',
+];
+
+async function loadNet() {
+  if (!NET) NET = await (await fetch('./runs/duck_policy.json')).json();
+  return NET;
+}
+
+function forwardNet(obs) {
+  const acts = [obs];
+  let h = obs;
+  for (const layer of NET.layers) {
+    const out = new Float64Array(layer.w.length);
+    for (let o = 0; o < layer.w.length; o++) {
+      const row = layer.w[o];
+      let acc = layer.b[o];
+      for (let i = 0; i < row.length; i++) acc += row[i] * h[i];
+      out[o] = Math.tanh(acc);
+    }
+    acts.push(out);
+    h = out;
+  }
+  const head = NET.action_head;
+  const a = new Float64Array(head.w.length);
+  for (let o = 0; o < head.w.length; o++) {
+    const row = head.w[o];
+    let acc = head.b[o];
+    for (let i = 0; i < row.length; i++) acc += row[i] * h[i];
+    a[o] = Math.max(-1, Math.min(1, acc));
+  }
+  acts.push(a);
+  return acts;
+}
+
+/* ── 观测输入 ── */
+let obsOverride = { tiltDeg: 0, kneeDeg: 0, heightCm: 12 };
+
+function buildObs() {
+  const o = OBS_BASE.slice();
+  const t = (obsOverride.tiltDeg * Math.PI) / 180;
+  o[1] = Math.sin(t / 2);           // 姿态 x
+  o[0] = Math.cos(t / 2);           // 姿态 w
+  o[10] = (obsOverride.kneeDeg * Math.PI) / 180;   // 左膝
+  o[35] = obsOverride.heightCm / 100;              // 高度
+  return o;
+}
+
+function renderObsList(obs) {
+  const box = document.getElementById('obsList');
+  if (!box.dataset.built) {
+    box.dataset.built = '1';
+    box.innerHTML = obs.map((_, i) => {
+      const g = i < 4 ? '姿态' : i < 7 ? '转速' : i < 21 ? '关节角' : i < 35 ? '关节速度' : '高度';
+      return `<div class="obsrow"><span class="g">${g}</span><span class="n">${OBS_NAMES[i]}</span>
+        <span class="v" id="ov${i}">0.00</span><span class="bar"><i id="ob${i}"></i></span></div>`;
+    }).join('');
+  }
+  for (let i = 0; i < 36; i++) {
+    document.getElementById('ov' + i).textContent = obs[i].toFixed(2);
+    const pct = Math.min(100, Math.abs(obs[i]) * 100);
+    const el = document.getElementById('ob' + i);
+    el.style.width = pct + '%';
+    el.style.background = obs[i] >= 0 ? '#d98324' : '#4a7ba6';
+  }
+}
+
+function renderOutList(acts) {
+  const box = document.getElementById('outList');
+  if (!box.dataset.built) {
+    box.dataset.built = '1';
+    box.innerHTML = Array.from(acts).map((_, i) => `<div class="outrow"><span class="n">${ACT_NAMES[i]}</span>
+      <span class="bar"><i id="oa${i}"></i></span><span class="v" id="ov2${i}">0.00</span></div>`).join('');
+  }
+  for (let i = 0; i < 14; i++) {
+    const a = acts[i];
+    const pct = Math.min(100, Math.abs(a) * 100);
+    const el = document.getElementById('oa' + i);
+    el.style.width = pct + '%';
+    el.style.background = a >= 0 ? '#d98324' : '#4a7ba6';
+    document.getElementById('ov2' + i).textContent = a.toFixed(2);
+  }
+}
+
+/* ── 鸭子跟着输出动 ── */
+function driveDuckNet(acts) {
+  const v = viewPromises['duckNet'];
+  if (!v) return;
+  v.then((view) => {
+    if (!view) return;
+    for (let i = 0; i < 14; i++) view.joint(ACT_BODY[i], acts[i] * 0.35);
+    view.render();
+  });
+}
+
+/* ── 网络热力图（第一层 64 个隐藏单元） ── */
+function renderHeat(acts) {
+  const box = document.getElementById('heat1');
+  const h1 = acts[1];
+  if (!box.dataset.built) {
+    box.dataset.built = '1';
+    box.innerHTML = Array.from({ length: 64 }, (_, i) =>
+      `<span class="cell" data-i="${i}" title="第 ${i} 个特征"></span>`).join('');
+    box.addEventListener('click', (e) => {
+      const c = e.target.closest('.cell');
+      if (!c) return;
+      showMath(Number(c.dataset.i));
+    });
+  }
+  const cells = box.children;
+  for (let i = 0; i < 64; i++) {
+    const v = h1[i];
+    const a = Math.abs(v);
+    const col = v >= 0 ? `rgba(217,131,36,${0.12 + a * 0.88})` : `rgba(74,123,166,${0.12 + a * 0.88})`;
+    cells[i].style.background = col;
+    cells[i].style.borderColor = a > 0.7 ? '#d98324' : 'var(--line)';
+  }
+}
+
+function showMath(j) {
+  const NET1 = NET.layers[0];
+  const obs = buildObs();
+  const row = NET1.w[j];
+  const b = NET1.b[j];
+  const parts = row.map((w, i) => ({ w, x: obs[i], prod: w * obs[i], i }))
+    .sort((a, b2) => Math.abs(b2.prod) - Math.abs(a.prod))
+    .slice(0, 5);
+  const sum = parts.reduce((s, p) => s + p.prod, 0) + b;
+  const out = Math.tanh(sum);
+  const lines = parts.map((p) => `  ${p.w >= 0 ? '+' : ''}${p.w.toFixed(3)} × ${OBS_NAMES[p.i]}(${p.x.toFixed(2)}) = ${p.prod.toFixed(3)}`);
+  const rest = row.reduce((s, w, i) => s + (parts.find((p) => p.i === i) ? 0 : w * obs[i]), 0);
+  const note = document.getElementById('mathNote');
+  note.className = 'note';
+  note.innerHTML =
+    `<b>第 ${j} 个特征 = 64 个数里挑出贡献最大的 5 个：</b><br>` +
+    `<span style="font-family:var(--mono);font-size:11px;line-height:1.8;white-space:pre-wrap;">${lines.join('\n')}\n  其余 31 项 + 偏置 ${b.toFixed(3)} 合计 ${rest.toFixed(3)}\n  → 求和 ${sum.toFixed(3)} → tanh → <b>${out.toFixed(3)}</b>（这就是那个格子的亮度）</span>`;
+  netState.picked = true;
+  checkNetDone();
+}
+
+/* ── 梯度演示 ── */
+let theta = -2.4;
+function drawGrad() {
+  const cv = document.getElementById('gradCanvas');
+  if (!cv || !cv.clientWidth) return;
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const w = cv.clientWidth, h = cv.clientHeight;
+  cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
+  const ctx = cv.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, w, h);
+  const pad = { l: 26, r: 12, t: 10, b: 20 };
+  const pw = w - pad.l - pad.r, ph = h - pad.t - pad.b;
+  const X = (t) => pad.l + pw * ((t + 3) / 6);
+  const L = (t) => (t * t) / 4 + 0.3;
+  const Y = (v) => pad.t + ph * (1 - v / 3.6);
+  ctx.strokeStyle = '#eef1f5';
+  ctx.beginPath(); ctx.moveTo(pad.l, Y(0)); ctx.lineTo(w - pad.r, Y(0)); ctx.stroke();
+  ctx.strokeStyle = '#b8c0ca'; ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  for (let t = -3; t <= 3; t += 0.05) {
+    const v = L(t);
+    t === -3 ? ctx.moveTo(X(t), Y(v)) : ctx.lineTo(X(t), Y(v));
+  }
+  ctx.stroke();
+  // 最优
+  ctx.strokeStyle = '#1f7a60'; ctx.setLineDash([3, 3]);
+  ctx.beginPath(); ctx.moveTo(X(0), pad.t); ctx.lineTo(X(0), h - pad.b); ctx.stroke();
+  ctx.setLineDash([]);
+  // 小球
+  ctx.fillStyle = '#d98324';
+  ctx.beginPath(); ctx.arc(X(theta), Y(L(theta)), 6, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#8894a1'; ctx.font = '9.5px -apple-system, sans-serif';
+  ctx.fillText('横轴 = 一个参数的值，纵轴 = 分数损失（越低越好）', pad.l, h - 6);
+  document.getElementById('gradState').textContent = `参数 θ = ${theta.toFixed(2)} · 损失 ${L(theta).toFixed(2)}`;
+}
+
+function gradStep() {
+  const lr = 0.6;
+  const grad = theta / 2;                       // L = θ²/4 + 0.3 的导数
+  theta -= lr * grad;
+  drawGrad();
+}
+
+let netState = { moved: false, picked: false };
+function checkNetDone() {
+  const n = (netState.moved ? 1 : 0) + (netState.picked ? 1 : 0);
+  const el = document.getElementById('m7state');
+  if (el) el.textContent = n >= 2 ? '已通关' : `${n} / 2`;
+  if (n >= 2) mark('s7');
+}
+
+async function renderNet() {
+  await loadNet();
+  const obs = buildObs();
+  const acts = forwardNet(obs);
+  renderObsList(obs);
+  renderOutList(acts[3]);
+  renderHeat(acts);
+  driveDuckNet(acts[3]);
+}
+
+/* ── 事件绑定 ── */
+(function bindNet() {
+  const t = document.getElementById('tiltX');
+  const k = document.getElementById('kneeL');
+  const h = document.getElementById('hgt');
+  const on = () => {
+    obsOverride.tiltDeg = Number(t.value);
+    obsOverride.kneeDeg = Number(k.value);
+    obsOverride.heightCm = Number(h.value);
+    document.getElementById('tiltXv').textContent = t.value + '°';
+    document.getElementById('kneeLv').textContent = k.value + '°';
+    document.getElementById('hgtv').textContent = h.value + ' cm';
+    netState.moved = true;
+    renderNet();
+    checkNetDone();
+  };
+  [t, k, h].forEach((el) => el.addEventListener('input', on));
+  document.getElementById('btnGrad').onclick = gradStep;
+  document.getElementById('btnGradMany').onclick = () => { for (let i = 0; i < 30; i++) setTimeout(gradStep, i * 90); };
+})();
+
+/* ════════════════════════════════════════════════════════════
+   第六关的通关判定（物理代码在下面）
+   ════════════════════════════════════════════════════════════ */
+setInterval(() => {
+  if (cur !== 8) return;
+  const s = window.__standBest || 0;
+  const pct = Math.min(100, (s / 10) * 100);
+  const fill = document.getElementById('tlFill');
+  if (fill) fill.style.width = pct + '%';
+  const st = document.getElementById('m7state');
+  if (st) {
+    st.textContent = s >= 10 ? '已通关 10 秒' : `${s.toFixed(1)} / 10 秒`;
+    if (s >= 10) mark('s8');
+  }
+}, 250);
+
+/* ════════════════════════════════════════════════════════════
+   第六站：真策略 + 真物理
+   ════════════════════════════════════════════════════════════ */
+let duckInit = false;
+let policyOn = true;
+let standingSteps = 0;
+let pokeTimer = 0;
+
+async function initDuck() {
+  if (duckInit) return;
+  duckInit = true;
+  const loadTitle = document.getElementById('loadTitle');
+  const loadFill = document.getElementById('loadFill');
+  const overlay = document.getElementById('loading');
+
+  try {
+    const THREE = await import('three');
+    const { OrbitControls } = await import('three/addons/OrbitControls.js');
+    const loadMujoco = (await import('../vendor/mujoco/mujoco.js')).default;
+    const { buildMujocoScene, updateBodyTransforms } = await import('../js/mjcfScene.js');
+
+    loadTitle.textContent = '启动物理引擎…';
+    loadFill.style.width = '8%';
+    const mujoco = await loadMujoco({
+      locateFile: (p) => (p.endsWith('.wasm') ? '../vendor/mujoco/mujoco.wasm' : p),
+    });
+
+    loadTitle.textContent = '载入模型资产（24 MB）…';
+    loadFill.style.width = '25%';
+    try { mujoco.FS.mkdir('/working'); } catch (e) {}
+    try { mujoco.FS.mount(mujoco.MEMFS, { root: '.' }, '/working'); } catch (e) {}
+    try { mujoco.FS.mkdir('/working/assets'); } catch (e) {}
+
+    const base = '../assets/mjcf/microduck/';
+    const manifest = await (await fetch(base + 'manifest.json')).json();
+    const tasks = [
+      ...manifest.xml.map((f) => ({ p: f, u: base + f, bin: false })),
+      ...manifest.meshes.map((m) => ({ p: 'assets/' + m, u: base + 'assets/' + m, bin: true })),
+    ];
+    let done = 0;
+    await Promise.all(tasks.map(async (t) => {
+      const res = await fetch(t.u);
+      if (t.bin) mujoco.FS.writeFile('/working/' + t.p, new Uint8Array(await res.arrayBuffer()));
+      else mujoco.FS.writeFile('/working/' + t.p, await res.text());
+      done += 1;
+      loadFill.style.width = (25 + (done / tasks.length) * 55) + '%';
+    }));
+
+    loadTitle.textContent = '载入训练好的策略…';
+    loadFill.style.width = '85%';
+    const net = await (await fetch('./runs/duck_policy.json')).json();
+
+    // 模型
+    const model = mujoco.MjModel.mj_loadXML('/working/scene.xml');
+    const data = new mujoco.MjData(model);
+    let standKey = 0;
+    for (let k = 0; k < model.nkey; k++) {
+      const nm = mujoco.mj_id2name(model, mujoco.mjtObj.mjOBJ_KEY.value, k);
+      if (nm && nm.toUpperCase() === 'STAND') standKey = k;
+    }
+    mujoco.mj_resetDataKeyframe(model, data, standKey);
+    mujoco.mj_forward(model, data);
+
+    const nominal = Array.from(model.key_ctrl).slice(standKey * model.nu, standKey * model.nu + model.nu);
+
+    // 关节点索引（与 Python 环境完全一致）
+    const hingeJoints = [];
+    for (let j = 1; j < model.njnt; j++) {
+      if (model.jnt_type[j] === mujoco.mjtJoint.mjJNT_HINGE.value) hingeJoints.push(j);
+    }
+    const qposAdr = hingeJoints.map((j) => model.jnt_qposadr[j]);
+    const dofAdr = hingeJoints.map((j) => model.jnt_dofadr[j]);
+    const trunk = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY.value, 'trunk_base');
+
+    // three.js
+    const canvas = document.getElementById('duckCanvas');
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.05;
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(38, 1, 0.004, 20);
+    camera.up.set(0, 0, 1);
+    const controls = new OrbitControls(camera, canvas);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.09;
+    controls.minDistance = 0.18;
+    controls.maxDistance = 1.6;
+    controls.maxPolarAngle = Math.PI * 0.495;
+
+    scene.add(new THREE.HemisphereLight(0xffffff, 0xc9d3de, 1.15));
+    const key = new THREE.DirectionalLight(0xfff6e8, 2.6);
+    key.position.set(0.45, -0.55, 0.95);
+    key.castShadow = true;
+    key.shadow.mapSize.set(2048, 2048);
+    key.shadow.camera.near = 0.05;
+    key.shadow.camera.far = 4;
+    key.shadow.camera.left = -0.35;
+    key.shadow.camera.right = 0.35;
+    key.shadow.camera.top = 0.35;
+    key.shadow.camera.bottom = -0.35;
+    key.shadow.bias = -0.0004;
+    scene.add(key);
+    const fill = new THREE.DirectionalLight(0xdfe9ff, 0.9);
+    fill.position.set(-0.7, 0.6, 0.5);
+    scene.add(fill);
+
+    const built = buildMujocoScene(mujoco, model, { groundSize: 3, groundRepeat: 22 });
+    scene.add(built.root);
+
+    // 取景
+    camera.position.set(0.40, -0.51, 0.30);
+    controls.target.set(0, 0, 0.10);
+    controls.update();
+
+    function resize() {
+      const w = canvas.clientWidth, h = canvas.clientHeight;
+      if (!w || !h) return;
+      renderer.setSize(w, h, false);
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+    }
+    new ResizeObserver(resize).observe(canvas);
+    resize();
+
+    // 采样用的正态噪声（固定种子，同一台机器每次看到的一样）
+    const std = (net.log_std || []).map((v) => Math.exp(v));
+    let seed = 20261023;
+    function randn() {
+      seed = (seed * 1664525 + 1013904223) >>> 0;
+      const u1 = Math.max(seed / 4294967296, 1e-7);
+      seed = (seed * 1664525 + 1013904223) >>> 0;
+      const u2 = seed / 4294967296;
+      return Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+    }
+
+    // 策略前向：36 → 64 → 64 → 14，再按训练时的分布采样
+    function policy(obs, sample = true) {
+      let h = obs;
+      for (const layer of net.layers) {
+        const out = new Float64Array(layer.w.length);
+        for (let o = 0; o < layer.w.length; o++) {
+          const row = layer.w[o];
+          let acc = layer.b[o];
+          for (let i = 0; i < row.length; i++) acc += row[i] * h[i];
+          out[o] = Math.tanh(acc);
+        }
+        h = out;
+      }
+      const a = new Float64Array(net.act_dim);
+      for (let o = 0; o < net.act_dim; o++) {
+        const row = net.action_head.w[o];
+        let acc = net.action_head.b[o];
+        for (let i = 0; i < row.length; i++) acc += row[i] * h[i];
+        const noise = sample && std.length ? std[o] * randn() : 0;
+        a[o] = Math.max(-1, Math.min(1, acc + noise));
+      }
+      return a;
+    }
+
+    function buildObs() {
+      const o = new Float64Array(36);
+      o[0] = data.qpos[3]; o[1] = data.qpos[4]; o[2] = data.qpos[5]; o[3] = data.qpos[6];
+      o[4] = data.qvel[3]; o[5] = data.qvel[4]; o[6] = data.qvel[5];
+      for (let i = 0; i < 14; i++) o[7 + i] = data.qpos[qposAdr[i]];
+      for (let i = 0; i < 14; i++) o[21 + i] = data.qvel[dofAdr[i]];
+      o[35] = data.qpos[2];
+      return o;
+    }
+
+    function resetDuck() {
+      mujoco.mj_resetDataKeyframe(model, data, standKey);
+      mujoco.mj_forward(model, data);
+      standingSteps = 0;
+      pokeTimer = 0;
+      updateBodyTransforms({ model, data, bodies: built.bodies });
+    }
+
+    const CTRL_DT = 0.02, SKIP = 10, SCALE = 0.35;
+    let acc = 0, last = 0, simTime = 0, fallTimer = 0;
+
+    function controlStep() {
+      if (policyOn) {
+        const a = policy(buildObs());
+        window.__acts = window.__acts || [];
+        if (window.__acts.length < 60) window.__acts.push([+a[0].toFixed(3), +a[3].toFixed(3), +Math.max(...a.map(Math.abs)).toFixed(3)]);
+        for (let i = 0; i < model.nu; i++) data.ctrl[i] = nominal[i] + a[i] * SCALE;
+      } else {
+        for (let i = 0; i < model.nu; i++) data.ctrl[i] = nominal[i];
+      }
+
+      if (pokeTimer > 0) {
+        pokeTimer -= CTRL_DT;
+        data.xfrc_applied[6] += 1.6;   // body1 的 x 方向推力
+        data.xfrc_applied[7] += 0.4;
+      }
+
+      for (let s = 0; s < SKIP; s++) mujoco.mj_step(model, data);
+      data.xfrc_applied.fill(0);
+
+      simTime += CTRL_DT;
+      // xmat 是扁平数组且含 world body（长度 nbody*9），取躯干局部 z 轴在世界 z 上的投影
+      const h = data.qpos[2];
+      // 训练环境用的终止条件就是「躯干掉到 6cm 以下」，这里保持一致
+      if (h > 0.062) standingSteps += 1;   // 6cm 是训练环境里的死亡线
+      else standingSteps = 0;
+
+      // 真倒了就自动扶起来，免得停在躺着的画面上
+      if (h < 0.055) {
+        fallTimer += CTRL_DT;
+        if (fallTimer > 1.2) { fallTimer = 0; resetDuck(); }
+      } else {
+        fallTimer = 0;
+      }
+
+      document.getElementById('cHeight').innerHTML = `高度 <b>${(data.qpos[2] * 100).toFixed(1)} cm</b>`;
+      const upEl = document.getElementById('cUpright');
+      upEl.innerHTML = `状态 <b>${h > 0.062 ? '站着' : '倒了'}</b>`;
+      upEl.className = 'chip ' + (h > 0.062 ? 'good' : 'bad');
+      document.getElementById('cTime').innerHTML = `已站 <b>${(standingSteps * 0.02).toFixed(1)} s</b>`;
+      window.__standSec = standingSteps * 0.02;
+      window.__standBest = Math.max(window.__standBest || 0, window.__standSec);
+    }
+
+    function loop(now) {
+      requestAnimationFrame(loop);
+      // 第一帧没有上一帧时间，直接跳过；其余情况把 dt 夹在 [0, 50ms]，避免后台切回时物理暴走
+      const dt = last ? Math.max(0, Math.min((now - last) / 1000, 0.05)) : 0;
+      last = now;
+      acc = Math.min(acc + dt, 0.2);
+      let guard = 0;
+      while (acc >= CTRL_DT && guard < 6) {
+        controlStep();
+        acc -= CTRL_DT;
+        guard += 1;
+      }
+      updateBodyTransforms({ model, data, bodies: built.bodies });
+      controls.update();
+      renderer.render(scene, camera);
+    }
+    requestAnimationFrame(loop);
+
+    window.__traj = (n) => {
+      resetDuck();
+      const out = [Array.from(data.qpos).map((v) => Number(v.toFixed(6)))];
+      for (let i = 0; i < n; i++) {
+        controlStep();
+        out.push(Array.from(data.qpos).map((v) => Number(v.toFixed(6))));
+      }
+      return { timestep: model.opt.timestep, nu: model.nu, qpos: out };
+    };
+
+    document.getElementById('btnPolicy').onclick = (e) => {
+      policyOn = !policyOn;
+      resetDuck();   // 每次切换都先回到同一个站立初始姿态，对比才干净
+      e.target.textContent = policyOn ? '关掉策略，看它倒' : '打开策略，看它站';
+      e.target.classList.toggle('primary', policyOn);
+      document.getElementById('cPolicy').innerHTML = `策略 <b>${policyOn ? '开' : '关'}</b>`;
+    };
+    document.getElementById('btnPoke').onclick = () => { pokeTimer = 0.12; };
+    document.getElementById('btnReset').onclick = () => resetDuck();
+
+    loadFill.style.width = '100%';
+    loadTitle.textContent = '就绪';
+    setTimeout(() => overlay.classList.add('hide'), 260);
+  } catch (err) {
+    loadTitle.textContent = '载入失败';
+    loadFill.style.background = '#b8412f';
+    console.error(err);
+  }
+}
+
+</script>
+</body>
+</html>
