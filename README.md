@@ -4,20 +4,24 @@
 
 这是一套可以离线运行的互动课程、物理模拟器和训练代码。主线不是讲公式，而是让你亲手试错、改奖励、看训练曲线、拆开真实策略网络，最后把策略跑在 MicroDuck 上。
 
-## 立即开始
+## 在线体验
+
+无需安装，直接用浏览器打开：
+
+- **网站封面：<https://weponusa.github.io/microduck-tutor/cover.html>**
+- **八关互动课程：<https://weponusa.github.io/microduck-tutor/rl-lab/course.html>**
+- **3D 物理模拟器：<https://weponusa.github.io/microduck-tutor/>**
+
+建议使用最新版 Chrome、Edge 或 Safari。首次打开需要下载模型与 WASM，之后的课程计算和策略推理都在浏览器本地完成，不需要在线 API。
+
+## 本地运行
 
 ```bash
 ./run.sh            # 默认 http://127.0.0.1:5173
 ./run.sh 8080       # 也可以换端口
 ```
 
-启动后打开：
-
-- **网站封面：<http://127.0.0.1:5173/cover.html>**
-- **八关互动课程：<http://127.0.0.1:5173/rl-lab/course.html>**
-- **3D 物理模拟器：<http://127.0.0.1:5173/>**
-
-必须通过 HTTP 访问，不能直接双击 HTML（浏览器的 ES module 与 WASM 安全限制）。课程和模型都在本地，不需要 CDN 或在线 API。
+本地开发时打开 <http://127.0.0.1:5173/cover.html>。必须通过 HTTP 访问，不能直接双击 HTML（浏览器的 ES module 与 WASM 安全限制）。全部静态资源随仓库提供，不需要 CDN。
 
 ## 八关学习路线
 
