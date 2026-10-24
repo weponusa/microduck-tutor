@@ -39,7 +39,9 @@
   <section class="stage" id="stage">
     <canvas id="view"></canvas>
 
-    <div class="stage-hint">
+    <button id="btn-sensor-mode" class="sensor-mode-launch" aria-pressed="false">◎ 传感器拆解</button>
+
+    <div class="stage-hint" id="stage-hint">
       <kbd>拖拽</kbd> 旋转视角 · <kbd>滚轮</kbd> 缩放 · <kbd>直接拖机器人</kbd> 施加外力
     </div>
 
@@ -84,6 +86,46 @@
         <option value="scene_walk.xml">行走模型 · 仅自碰撞（scene_walk）</option>
         <option value="scene_rollers.xml">滚轮脚（scene_rollers）</option>
       </select>
+    </section>
+
+    <section class="card sensor-card" id="sensor-card">
+      <div class="card-head">
+        <h2>传感器互动拆解</h2>
+        <span class="mode-badge" id="sensor-mode-badge">9 个观察点</span>
+      </div>
+      <p class="card-note">点三维模型上的标签，看它怎样“站稳、看路、互动”。真实仿真读数与教学示意分开标注。</p>
+      <button id="btn-sensor-toggle" class="btn wide" aria-pressed="false">进入传感器模式</button>
+      <div id="sensor-explorer-body" class="sensor-explorer-body" hidden>
+        <div class="sensor-topic-list" id="sensor-topic-list" role="group" aria-label="选择传感器"></div>
+        <div class="sensor-detail-head">
+          <h3 id="sensor-title">前置摄像头</h3>
+          <span id="sensor-status" class="sensor-status">官方确认</span>
+        </div>
+        <p id="sensor-description" class="sensor-description"></p>
+        <div id="sensor-reading" class="sensor-reading">等待模型载入</div>
+        <div id="sensor-tof-control" class="sensor-tof-control" hidden>
+          <label for="sensor-tof-distance">演示障碍距离 <b id="sensor-tof-value">40 cm</b></label>
+          <input id="sensor-tof-distance" type="range" min="10" max="100" step="5" value="40" />
+          <small>拖动看 64 个测距点如何变化；这是教学演示，不是真实 ToF 数据。</small>
+        </div>
+        <button id="sensor-demo" class="btn wide" hidden>运行互动演示</button>
+        <details class="sensor-facts">
+          <summary>规格、来源与事实边界</summary>
+          <p id="sensor-boundary"></p>
+          <ul>
+            <li>官方现售产品：15 个电机、25 cm、800 g 以下、50 Hz 机载策略环。</li>
+            <li>官方预售：399 美元（税费和运费另计），2026 年 8 月 27 日开订。</li>
+            <li>计算与电池：RK3566 + AI 加速器，1 GB 内存、32 GB 存储；NP-F550 2600 mAh 可拆电池，续航约 1 小时（随使用变化）。</li>
+            <li>本网页教学模型：14 路执行器；不能把 14 路策略观测当成整机全部硬件。</li>
+            <li>相机分辨率/视场角、ToF 量程和无线电版本仍未最终公布。</li>
+            <li>开源的是软件栈，不是机械与电路设计文件。</li>
+          </ul>
+          <div class="sensor-source-links">
+            <a href="https://pollen-robotics.com/microduck/press-kit/" target="_blank" rel="noreferrer">官方规格与未定项 ↗</a>
+            <a href="https://github.com/pollen-robotics/microduck" target="_blank" rel="noreferrer">官方软件栈 ↗</a>
+          </div>
+        </details>
+      </div>
     </section>
 
     <section class="card training-card">

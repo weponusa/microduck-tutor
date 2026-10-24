@@ -430,6 +430,83 @@ kbd {
 .vector-row .num { color: var(--ink); font-family: var(--mono); font-size: 8.5px; font-variant-numeric: tabular-nums; }
 .vector-list.actions .vector-row { background: var(--accent-soft); }
 
+/* 传感器互动拆解 */
+.sensor-mode-launch {
+  position: absolute;
+  z-index: 6;
+  top: 14px;
+  right: 16px;
+  padding: 7px 11px;
+  border: 1px solid #bdd8d2;
+  border-radius: 999px;
+  background: rgba(247, 253, 251, .94);
+  color: #236c5b;
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 3px 12px rgba(22, 32, 43, .06);
+}
+.sensor-mode-launch.active { background: #236c5b; border-color: #236c5b; color: #fff; }
+.sensor-overlay { position: absolute; inset: 0; z-index: 4; overflow: hidden; pointer-events: none; }
+.sensor-label {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  padding: 5px 8px;
+  border: 1px solid rgba(61, 104, 98, .32);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .93);
+  color: #315c55;
+  font: inherit;
+  font-size: 10px;
+  line-height: 1;
+  white-space: nowrap;
+  pointer-events: auto;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(22, 32, 43, .12);
+  transition: background .12s, color .12s, border-color .12s;
+}
+.sensor-label:hover, .sensor-label.selected { background: #236c5b; border-color: #236c5b; color: #fff; }
+.sensor-label[hidden] { display: none; }
+.sensor-card { border-color: #ceddd9; background: linear-gradient(180deg, #f8fcfb 0%, #fff 42%); }
+.sensor-explorer-body { margin-top: 11px; }
+.sensor-explorer-body[hidden] { display: none; }
+.sensor-topic-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; }
+.sensor-topic {
+  min-width: 0;
+  padding: 6px 4px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: #fff;
+  color: var(--ink-soft);
+  font: inherit;
+  font-size: 10px;
+  cursor: pointer;
+}
+.sensor-topic:hover { border-color: #9fc8bd; }
+.sensor-topic.active { border-color: #388573; background: #eaf5f0; color: #1f6b58; font-weight: 600; }
+.sensor-detail-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 12px; }
+.sensor-detail-head h3 { margin: 0; font-size: 13px; color: var(--ink); }
+.sensor-status { flex: none; padding: 3px 6px; border-radius: 999px; background: #eaf5f0; color: #1f7a60; font-size: 9px; }
+.sensor-status.simulated { background: #edf2fb; color: #42638e; }
+.sensor-status.unconfirmed { background: var(--accent-soft); color: #8a5a10; }
+.sensor-description { margin: 7px 0 0; color: var(--ink-soft); font-size: 11px; line-height: 1.65; }
+.sensor-reading { margin-top: 8px; padding: 7px 8px; border-radius: 7px; background: #f3f7f6;
+  color: #315c55; font-family: var(--mono); font-size: 9.5px; line-height: 1.55; overflow-wrap: anywhere; }
+.sensor-tof-control { margin-top: 9px; padding: 8px; border: 1px solid var(--line); border-radius: 8px; background: #fbfcfd; }
+.sensor-tof-control[hidden] { display: none; }
+.sensor-tof-control label { display: flex; justify-content: space-between; color: var(--ink-soft); font-size: 10.5px; }
+.sensor-tof-control input { width: 100%; margin: 8px 0 3px; accent-color: #287866; }
+.sensor-tof-control small { display: block; color: var(--ink-faint); font-size: 9.5px; line-height: 1.5; }
+#sensor-demo { margin-top: 8px; }
+.sensor-facts { margin-top: 10px; border-top: 1px solid var(--line); padding-top: 8px; }
+.sensor-facts summary { cursor: pointer; color: #287866; font-size: 11px; }
+.sensor-facts p, .sensor-facts li { color: var(--ink-soft); font-size: 10px; line-height: 1.6; }
+.sensor-facts p { margin: 8px 0 0; }
+.sensor-facts ul { margin: 7px 0; padding-left: 17px; }
+.sensor-facts a { color: #287866; font-size: 10px; }
+.sensor-source-links { display: flex; gap: 12px; flex-wrap: wrap; }
+
 /* 真实训练室 */
 .training-card { border-color: #cfdedb; background: linear-gradient(180deg, #f9fdfc 0%, #fff 46%); }
 .training-selects { display: grid; grid-template-columns: 1fr; gap: 8px; margin-top: 10px; }
@@ -551,4 +628,13 @@ kbd {
 @media (max-width: 980px) {
   .layout { grid-template-columns: 1fr; grid-template-rows: minmax(320px, 1fr) auto; }
   .panel { border-left: 0; border-top: 1px solid var(--line); }
+}
+
+@media (max-width: 600px) {
+  .stage-hint { max-width: calc(100% - 154px); font-size: 9.5px; }
+  .toolbar { left: 8px; right: 8px; bottom: 10px; transform: none; overflow-x: auto; justify-content: flex-start; }
+  .toolbar > * { flex: none; }
+  .sensor-mode-launch { right: 10px; top: 10px; font-size: 10px; padding: 6px 9px; }
+  .sensor-label { font-size: 9px; padding: 4px 6px; }
+  .sensor-topic-list { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }

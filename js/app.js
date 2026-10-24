@@ -4,6 +4,7 @@ import loadMujoco from '../vendor/mujoco/mujoco.js';
 import { buildMujocoScene, updateBodyTransforms } from './mjcfScene.js';
 import { ACT_NAMES, DuckPolicyRuntime, OBS_NAMES, RL, WALK_OBS_NAMES, loadPolicy } from './rlPolicy.js';
 import { TrainingClient } from './rlTraining.js';
+import { SENSOR_TOPICS, SensorExplorer } from './sensorExplorer.js';
 
 const MODEL_DIR = './assets/mjcf/microduck/';
 const DEG = 180 / Math.PI;
@@ -42,6 +43,9 @@ const app = {
   trainingBusy: false,
   trainingMetrics: null,
   trainingHistory: [],
+  sensorMode: false,
+  sensorSelected: 'camera',
+  sensorExplorer: null,
 };
 
 const ui = {
@@ -113,6 +117,21 @@ const ui = {
   trainingTaskNote: document.getElementById('training-task-note'),
   walkWarning: document.getElementById('walk-warning'),
   checkpointNote: document.getElementById('checkpoint-note'),
+  stageHint: document.getElementById('stage-hint'),
+  sensorModeButton: document.getElementById('btn-sensor-mode'),
+  sensorToggle: document.getElementById('btn-sensor-toggle'),
+  sensorBadge: document.getElementById('sensor-mode-badge'),
+  sensorBody: document.getElementById('sensor-explorer-body'),
+  sensorTopicList: document.getElementById('sensor-topic-list'),
+  sensorTitle: document.getElementById('sensor-title'),
+  sensorStatus: document.getElementById('sensor-status'),
+  sensorDescription: document.getElementById('sensor-description'),
+  sensorReading: document.getElementById('sensor-reading'),
+  sensorTofControl: document.getElementById('sensor-tof-control'),
+  sensorTofDistance: document.getElementById('sensor-tof-distance'),
+  sensorTofValue: document.getElementById('sensor-tof-value'),
+  sensorDemo: document.getElementById('sensor-demo'),
+  sensorBoundary: document.getElementById('sensor-boundary'),
 };
 
 /* ── three.js 舞台 ─────────────────────────────── */
@@ -161,6 +180,16 @@ scene.add(fill);
 const rim = new THREE.DirectionalLight(0xffffff, 0.6);
 rim.position.set(0, 1.0, 0.35);
 scene.add(rim);
+
+const sensorExplorer = new SensorExplorer({
+  scene,
+  camera,
+  controls,
+  canvas: ui.canvas,
+  stage: ui.stage,
+  onSelect: (id) => selectSensorTopic(id),
+});
+app.sensorExplorer = sensorExplorer;
 
 function resize() {
   const w = ui.stage.clientWidth;
@@ -225,6 +254,7 @@ async function mountModelFiles(mujoco) {
 
 /* ── 载入 / 切换场景 ───────────────────────────── */
 function disposeScene() {
+  sensorExplorer.disposeModel();
   if (!app.root) return;
   scene.remove(app.root);
   app.root.traverse((obj) => {
@@ -323,6 +353,8 @@ async function loadModel(sceneFile, { keepCamera = false } = {}) {
   const standIdx = findKeyframeIndex('STAND');
   applyKeyframe(standIdx >= 0 ? standIdx : 0);
   configurePolicyRuntime();
+  sensorExplorer.rebuild(app);
+  selectSensorTopic(app.sensorSelected);
 
   ui.dof.textContent = String(model.nq - 7);
   ui.timestep.textContent = `${(model.opt.timestep * 1000).toFixed(1)} ms`;
@@ -1043,6 +1075,84 @@ function updateTelemetry(now) {
   updatePolicyTelemetry();
 }
 
+/* ── 传感器互动拆解 ───────────────────────────── */
+let lastSensorReading = 0;
+
+function updateSensorReading() {
+  if (!app.sensorMode) return;
+  try {
+    ui.sensorReading.textContent = sensorExplorer.getReading(app.sensorSelected) || '当前没有可显示的读数';
+  } catch (error) {
+    ui.sensorReading.textContent = `读数暂不可用：${error.message}`;
+  }
+}
+
+function selectSensorTopic(id) {
+  const topic = SENSOR_TOPICS.find((item) => item.id === id) || SENSOR_TOPICS[0];
+  app.sensorSelected = topic.id;
+  if (sensorExplorer.selected !== topic.id) sensorExplorer.select(topic.id);
+  ui.sensorTopicList.querySelectorAll('button').forEach((button) => {
+    const active = button.dataset.sensor === topic.id;
+    button.classList.toggle('active', active);
+    button.setAttribute('aria-pressed', String(active));
+  });
+  ui.sensorTitle.textContent = topic.title;
+  ui.sensorStatus.textContent = topic.status;
+  ui.sensorStatus.className = 'sensor-status';
+  if (topic.id === 'feet') ui.sensorStatus.classList.add('unconfirmed');
+  else if (['bodyImu', 'joints'].includes(topic.id)) ui.sensorStatus.classList.add('simulated');
+  ui.sensorDescription.textContent = topic.description;
+  ui.sensorBoundary.textContent = topic.boundary;
+  ui.sensorTofControl.hidden = topic.id !== 'tof';
+  const demoLabels = { audio: '试听合成嘎嘎声（非官方声纹）', nfc: '模拟 NFC 标签靠近', wireless: '演示无线连接脉冲' };
+  ui.sensorDemo.hidden = !demoLabels[topic.id];
+  ui.sensorDemo.textContent = demoLabels[topic.id] || '';
+  updateSensorReading();
+}
+
+function setSensorMode(enabled) {
+  app.sensorMode = enabled;
+  sensorExplorer.setEnabled(enabled);
+  ui.sensorBody.hidden = !enabled;
+  ui.sensorToggle.textContent = enabled ? '退出传感器模式' : '进入传感器模式';
+  ui.sensorToggle.setAttribute('aria-pressed', String(enabled));
+  ui.sensorModeButton.textContent = enabled ? '× 退出拆解' : '◎ 传感器拆解';
+  ui.sensorModeButton.classList.toggle('active', enabled);
+  ui.sensorModeButton.setAttribute('aria-pressed', String(enabled));
+  ui.sensorBadge.textContent = enabled ? '互动中' : '9 个观察点';
+  ui.sensorBadge.classList.toggle('on', enabled);
+  ui.stageHint.innerHTML = enabled
+    ? '<kbd>点标签</kbd> 选择传感器 · <kbd>拖拽空白处</kbd> 旋转 · 彩色动态图形为教学示意'
+    : '<kbd>拖拽</kbd> 旋转视角 · <kbd>滚轮</kbd> 缩放 · <kbd>直接拖机器人</kbd> 施加外力';
+  if (enabled) selectSensorTopic(app.sensorSelected);
+}
+
+for (const topic of SENSOR_TOPICS) {
+  const button = document.createElement('button');
+  button.className = 'sensor-topic';
+  button.dataset.sensor = topic.id;
+  button.textContent = topic.short;
+  button.setAttribute('aria-pressed', 'false');
+  button.addEventListener('click', () => selectSensorTopic(topic.id));
+  ui.sensorTopicList.appendChild(button);
+}
+ui.sensorToggle.addEventListener('click', () => setSensorMode(!app.sensorMode));
+ui.sensorModeButton.addEventListener('click', () => setSensorMode(!app.sensorMode));
+ui.sensorTofDistance.addEventListener('input', () => {
+  const distance = Number(ui.sensorTofDistance.value);
+  ui.sensorTofValue.textContent = `${distance} cm`;
+  sensorExplorer.setTofDistance(distance);
+  updateSensorReading();
+});
+ui.sensorDemo.addEventListener('click', async () => {
+  try {
+    await sensorExplorer.runDemo(app.sensorSelected);
+  } catch (error) {
+    ui.sensorReading.textContent = `演示未能启动：${error.message}`;
+  }
+  updateSensorReading();
+});
+
 /* ── 主循环 ───────────────────────────────────── */
 function frame(now) {
   requestAnimationFrame(frame);
@@ -1067,6 +1177,11 @@ function frame(now) {
   }
 
   controls.update();
+  sensorExplorer.update(now);
+  if (app.sensorMode && now - lastSensorReading > 120) {
+    updateSensorReading();
+    lastSensorReading = now;
+  }
   renderer.render(scene, camera);
 }
 
