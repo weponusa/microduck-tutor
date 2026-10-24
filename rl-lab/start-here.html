@@ -283,7 +283,7 @@
   }
 </style>
 </head>
-<body data-site-root="../" data-site-page="reading">
+<body data-site-root="../" data-site-page="course">
 
 <div class="wrap">
 
@@ -629,7 +629,7 @@ Q   = −0.02 + 0.2 × (6.379 − (−0.02)) = 1.26</code></pre>
 
 <div class="cols2">
   <div class="box"><h5>并行环境</h5><p>同时开 4 个、8 个模拟器一起采数据。物理模拟慢，不等它。</p></div>
-  <div class="box"><h5>观测归一化</h5><p>关节角是 0.8，高度是 0.12，数量级差太多，网络会学偏。先统一尺度。</p></div>
+  <div class="box"><h5>观测检查</h5><p>顺序、单位和是否归一化都要与训练一致。本项目直接把 36 维原始观测送进网络。</p></div>
   <div class="box"><h5>中途存盘</h5><p>训练 8 分钟不算长，训 8 小时就必须能断点续训。</p></div>
   <div class="box"><h5>定期评估</h5><p>训练曲线是训练集的表现，必须另外开一局考试。</p></div>
 </div>

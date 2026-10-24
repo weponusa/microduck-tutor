@@ -8,7 +8,6 @@
     ['home', '首页', ''],
     ['course', '八关课程', 'rl-lab/course.html'],
     ['simulator', '物理沙盒', 'simulator.html'],
-    ['reading', '深度读本', 'rl-lab/start-here.html'],
     ['tools', '实验工具', 'rl-lab/stepper.html'],
   ];
 

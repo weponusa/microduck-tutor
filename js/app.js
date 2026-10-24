@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/OrbitControls.js';
 import loadMujoco from '../vendor/mujoco/mujoco.js';
 import { buildMujocoScene, updateBodyTransforms } from './mjcfScene.js';
+import { ACT_NAMES, DuckPolicyRuntime, OBS_NAMES, RL, loadPolicy } from './rlPolicy.js';
 
 const MODEL_DIR = './assets/mjcf/microduck/';
 const DEG = 180 / Math.PI;
@@ -29,6 +30,11 @@ const app = {
   baseGains: [],
   suspend: false,
   suspendHeight: 0.12,
+  controlMode: 'manual',
+  policyNet: null,
+  policy: null,
+  policySample: false,
+  policyError: '',
 };
 
 const ui = {
@@ -58,6 +64,18 @@ const ui = {
   dof: document.getElementById('dof'),
   timestep: document.getElementById('timestep'),
   engine: document.getElementById('engine-version'),
+  manual: document.getElementById('btn-manual'),
+  policy: document.getElementById('btn-policy-control'),
+  policyBadge: document.getElementById('policy-mode-badge'),
+  policyEval: document.getElementById('policy-eval'),
+  policyNote: document.getElementById('policy-note'),
+  rReward: document.getElementById('r-reward'),
+  rReturn: document.getElementById('r-return'),
+  rUpright: document.getElementById('r-upright'),
+  rEpisode: document.getElementById('r-episode'),
+  rDone: document.getElementById('r-done'),
+  policyObs: document.getElementById('policy-obs'),
+  policyAct: document.getElementById('policy-act'),
 };
 
 /* ── three.js 舞台 ─────────────────────────────── */
@@ -230,6 +248,8 @@ async function loadModel(sceneFile, { keepCamera = false } = {}) {
   setLoading(`载入 ${sceneFile} …`, 1);
 
   disposeScene();
+  app.controlMode = 'manual';
+  app.policy = null;
 
   if (app.data) { try { app.data.delete(); } catch (e) {} app.data = null; }
   if (app.model) { try { app.model.delete(); } catch (e) {} app.model = null; }
@@ -265,11 +285,12 @@ async function loadModel(sceneFile, { keepCamera = false } = {}) {
 
   const standIdx = findKeyframeIndex('STAND');
   applyKeyframe(standIdx >= 0 ? standIdx : 0);
+  configurePolicyRuntime();
 
   ui.dof.textContent = String(model.nq - 7);
   ui.timestep.textContent = `${(model.opt.timestep * 1000).toFixed(1)} ms`;
   ui.sceneSelect.value = sceneFile;
-  ui.sceneSelect.disabled = false;
+  updateControlModeUI();
 
   if (!keepCamera) frameCamera();
   hideLoading();
@@ -437,9 +458,12 @@ function applyKeyframe(index, { silent = false } = {}) {
   mujoco.mj_forward(model, data);
   app.simTime = 0;
   app.acc = 0;
+  app.poke = null;
+  if (app.policy) app.policy.resetEpisode();
   if (!silent) markActivePose(index);
   syncSlidersFromCtrl();
   updateBodyTransforms(app);
+  updatePolicyTelemetry();
 }
 
 /* ── 执行器增益 ───────────────────────────────── */
@@ -466,6 +490,123 @@ function applyKpScale(scale) {
   }
   app.kpScale = scale;
   ui.kpValue.textContent = `${scale.toFixed(1)}×`;
+}
+
+/* ── 强化学习策略实验台 ───────────────────────── */
+function buildPolicyVectorUI() {
+  ui.policyObs.innerHTML = OBS_NAMES.map((name, i) =>
+    `<div class="vector-row" title="obs[${i}] ${name}"><span class="idx">${i}</span><span class="name">${name}</span><span class="num" id="policy-o-${i}">—</span></div>`).join('');
+  ui.policyAct.innerHTML = ACT_NAMES.map((name, i) =>
+    `<div class="vector-row" title="action[${i}] ${name}"><span class="idx">${i}</span><span class="name">${name}</span><span class="num" id="policy-a-${i}">—</span></div>`).join('');
+}
+
+function setPolicyNote(text, kind = '') {
+  ui.policyNote.textContent = text;
+  ui.policyNote.className = `card-note${kind ? ` ${kind}` : ''}`;
+}
+
+function resetPolicyMetrics() {
+  ui.rReward.textContent = '—';
+  ui.rReturn.textContent = '—';
+  ui.rUpright.textContent = '—';
+  ui.rEpisode.textContent = '—';
+  ui.rDone.textContent = app.policyNet ? '策略模式尚未开启' : '策略权重不可用，手动模式不受影响';
+  ui.rDone.className = 'episode-state';
+  for (let i = 0; i < 36; i++) document.getElementById(`policy-o-${i}`).textContent = '—';
+  for (let i = 0; i < 14; i++) document.getElementById(`policy-a-${i}`).textContent = '—';
+}
+
+function updatePolicyTelemetry() {
+  const p = app.policy;
+  if (app.controlMode !== 'policy' || !p) return;
+  ui.rReward.textContent = p.reward === null ? '—' : p.reward.toFixed(4);
+  ui.rReturn.textContent = p.totalReturn.toFixed(2);
+  ui.rUpright.textContent = p.upright.toFixed(4);
+  ui.rEpisode.textContent = `${p.steps} / ${RL.maxSteps} 步 · ${(p.steps * RL.controlDt).toFixed(2)} s`;
+  ui.rDone.textContent = p.doneReason || (p.steps ? '回合进行中：倾斜超过 45° 或高度低于 6 cm 即终止' : '已从 STAND 复位，等待第一次决策');
+  ui.rDone.className = `episode-state${p.doneReason ? (p.steps >= RL.maxSteps && !p.doneReason.startsWith('终止') ? ' good' : ' bad') : ''}`;
+  for (let i = 0; i < 36; i++) document.getElementById(`policy-o-${i}`).textContent = p.lastObservation[i].toFixed(3);
+  for (let i = 0; i < 14; i++) document.getElementById(`policy-a-${i}`).textContent = p.lastAction[i].toFixed(3);
+}
+
+function updateControlModeUI() {
+  const active = app.controlMode === 'policy' && !!app.policy;
+  ui.manual.classList.toggle('active', !active);
+  ui.policy.classList.toggle('active', active);
+  ui.manual.setAttribute('aria-pressed', String(!active));
+  ui.policy.setAttribute('aria-pressed', String(active));
+  ui.policy.disabled = !app.policyNet || !app.model;
+  ui.policyEval.disabled = !active;
+  ui.policyBadge.textContent = active ? (app.policySample ? '策略 · 采样' : '策略 · 确定性') : '手动控制';
+  ui.policyBadge.classList.toggle('on', active);
+  ui.sceneSelect.disabled = active || !app.model;
+  ui.kpScale.disabled = active;
+  ui.suspend.disabled = active;
+  for (const row of app.jointRows) row.input.disabled = active;
+  ui.poseRow.querySelectorAll('button').forEach((button) => { button.disabled = active; });
+  if (!active) resetPolicyMetrics();
+}
+
+function policyCompatibilityIssue() {
+  if (!app.policyNet) return app.policyError || '真实策略尚未载入';
+  if (app.sceneFile !== 'scene.xml') return '这份站立策略只在 scene.xml 上训练；请先切回「站立 · 地面接触」。';
+  if (Math.abs(app.kpScale - 1) > 1e-6) return '请把舵机刚度恢复为 1×，否则比较的是改过的物理参数，不是原训练策略。';
+  if (app.suspend) return '请先关闭悬吊模式；策略训练时躯干没有被固定在空中。';
+  if (!app.policy) return app.policyError || '当前模型与这份策略不兼容';
+  return '';
+}
+
+function configurePolicyRuntime() {
+  app.policy = null;
+  app.policyError = '';
+  if (app.policyNet) {
+    try {
+      app.policy = new DuckPolicyRuntime({
+        mujoco: app.mujoco,
+        model: app.model,
+        data: app.data,
+        net: app.policyNet,
+      });
+    } catch (err) {
+      app.policyError = err.message;
+    }
+  }
+  updateControlModeUI();
+  updatePolicyTelemetry();
+}
+
+function startPolicyEpisode({ autoplay = false } = {}) {
+  const issue = policyCompatibilityIssue();
+  if (issue) {
+    setPolicyNote(issue, 'warn');
+    return;
+  }
+  applyKeyframe(app.policy.standKey);
+  app.poke = null;
+  setPolicyNote(app.policySample
+    ? '采样执行：每个动作加入 log_std 对应的噪声。切换方式或点重置都会从同一 STAND 姿态重开。'
+    : '确定性执行：直接取动作均值。它可能弱于采样执行，这正是评估时要检查的差异。', 'good');
+  updateControlModeUI();
+  updatePolicyTelemetry();
+  if (autoplay) setPaused(false);
+}
+
+function setControlMode(mode) {
+  if (mode === 'manual') {
+    app.controlMode = 'manual';
+    app.poke = null;
+    if (app.policy) app.policy.resetEpisode();
+    setPolicyNote('手动模式：拖动关节滑块直接设置目标角。切到真实策略后，这些滑块会锁定，避免两边同时抢控制权。');
+    updateControlModeUI();
+    return;
+  }
+  const issue = policyCompatibilityIssue();
+  if (issue) {
+    setPolicyNote(issue, 'warn');
+    return;
+  }
+  app.controlMode = 'policy';
+  startPolicyEpisode({ autoplay: true });
 }
 
 /* ── 拖拽施力 ─────────────────────────────────── */
@@ -542,6 +683,8 @@ function applyExternalForces() {
 
 function stepOnce() {
   const { model, data } = app;
+  const policyActive = app.controlMode === 'policy' && app.policy && !app.policy.doneReason;
+  if (policyActive && app.policy.phase === 0) app.policy.beforePhysicsStep(app.policySample);
   if (app.suspend) {
     // 悬吊：把自由关节钉在空中，只让四肢受物理与执行器影响
     data.qpos[0] = 0;
@@ -557,6 +700,14 @@ function stepOnce() {
   app.mujoco.mj_step(model, data);
   app.simTime += model.opt.timestep;
   if (app.simTime < 0) app.simTime = 0;
+  if (policyActive) {
+    const episode = app.policy.afterPhysicsStep();
+    if (episode && episode.doneReason) {
+      app.acc = 0;
+      setPaused(true);
+      updatePolicyTelemetry();
+    }
+  }
 }
 
 /* ── 遥测 ─────────────────────────────────────── */
@@ -585,6 +736,7 @@ function updateTelemetry(now) {
   ui.tTime.textContent = `${app.simTime.toFixed(2)} s`;
 
   for (const row of app.jointRows) updateJointValue(row, row.valueEl);
+  updatePolicyTelemetry();
 }
 
 /* ── 主循环 ───────────────────────────────────── */
@@ -601,7 +753,7 @@ function frame(now) {
     const h = app.model.opt.timestep;
     app.acc += dt * app.speed;
     let guard = 0;
-    while (app.acc >= h && guard < 500) {
+    while (app.acc >= h && guard < 500 && !app.paused) {
       stepOnce();
       app.acc -= h;
       guard += 1;
@@ -625,6 +777,10 @@ ui.play.addEventListener('click', () => setPaused(!app.paused));
 
 ui.step.addEventListener('click', () => {
   if (!app.data) return;
+  if (app.controlMode === 'policy' && app.policy?.doneReason) {
+    setPolicyNote('这一回合已经结束。先点「重置」回到 STAND，再逐次单步。', 'warn');
+    return;
+  }
   setPaused(true);
   for (let i = 0; i < 10; i++) stepOnce();
   updateBodyTransforms(app);
@@ -632,6 +788,10 @@ ui.step.addEventListener('click', () => {
 });
 
 ui.reset.addEventListener('click', () => {
+  if (app.controlMode === 'policy' && app.policy) {
+    startPolicyEpisode();
+    return;
+  }
   const idx = Number(ui.poseRow.querySelector('.pose-btn.active')?.dataset.key ?? 0);
   applyKeyframe(idx);
 });
@@ -645,8 +805,20 @@ ui.collision.addEventListener('click', () => {
 });
 
 ui.pokeBtn.addEventListener('click', () => {
+  if (app.controlMode === 'policy' && app.policy?.doneReason) {
+    setPolicyNote('这一回合已经结束。先点「重置」，再推它做下一次测试。', 'warn');
+    return;
+  }
   app.poke = { t: 0.14, fx: 1.1, fy: 0.25 };
   setPaused(false);
+});
+
+ui.manual.addEventListener('click', () => setControlMode('manual'));
+ui.policy.addEventListener('click', () => setControlMode('policy'));
+ui.policyEval.addEventListener('change', () => {
+  app.policySample = ui.policyEval.value === 'sample';
+  if (app.controlMode === 'policy') startPolicyEpisode({ autoplay: true });
+  updateControlModeUI();
 });
 
 ui.kpScale.addEventListener('input', () => {
@@ -692,6 +864,8 @@ window.addEventListener('keydown', (event) => {
 /* ── 启动 ─────────────────────────────────────── */
 async function boot() {
   resize();
+  buildPolicyVectorUI();
+  resetPolicyMetrics();
   requestAnimationFrame(frame);
 
   setLoading('启动 MuJoCo 引擎…', 0.05);
@@ -703,6 +877,15 @@ async function boot() {
   let version = '3.16';
   try { version = mujoco.mj_versionString?.() || version; } catch (e) {}
   ui.engine.textContent = version;
+
+  setLoading('载入真实 PPO 策略…', 0.08);
+  try {
+    app.policyNet = await loadPolicy();
+  } catch (err) {
+    app.policyError = err.message;
+    setPolicyNote(`策略未能载入：${err.message}。手动物理沙盒仍可使用。`, 'warn');
+    console.error(err);
+  }
 
   setLoading('载入模型资产（约 24 MB）…', 0.1);
   const count = await mountModelFiles(mujoco);

@@ -311,11 +311,80 @@
   .three { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 14px; }
   .three .note { margin: 0; }
 
+  /* 课内读本：从 start-here.html 单源抽取，不复制一套教程 */
+  .mission-read { margin-left: auto; padding: 3px 9px; border-color: var(--accent-line);
+    color: #8a5a10; background: rgba(255,255,255,0.65); font-size: 11px; }
+  .mission-read + .state { margin-left: 0; }
+  .mission.ok .mission-read { border-color: #b8ddcf; color: var(--good); }
+  .foot-center { display: flex; align-items: center; justify-content: center; gap: 12px; }
+  .foot-center button { padding: 5px 10px; font-size: 11.5px; }
+  .reader-backdrop { position: fixed; inset: 0; z-index: 1100; background: rgba(24,34,45,0.28); backdrop-filter: blur(2px); }
+  .reader { position: fixed; z-index: 1101; top: 0; right: 0; bottom: 0; width: min(650px, 100vw);
+    display: flex; flex-direction: column; background: #fbfbfc; border-left: 1px solid var(--line);
+    box-shadow: -18px 0 55px rgba(24,34,45,0.16); }
+  .reader-backdrop[hidden], .reader[hidden] { display: none; }
+  .reader-head { flex: none; display: flex; align-items: flex-start; gap: 14px; padding: 20px 22px 14px;
+    background: #fff; border-bottom: 1px solid var(--line); }
+  .reader-heading { flex: 1; min-width: 0; }
+  .reader-kicker { color: var(--accent); font-size: 10.5px; letter-spacing: 1px; }
+  .reader-head h2 { margin: 3px 0 4px; font-size: 20px; line-height: 1.4; }
+  .reader-head p { margin: 0; font-size: 11.5px; color: var(--ink-faint); }
+  .reader-close { flex: none; width: 32px; height: 32px; padding: 0; border-radius: 50%; font-size: 19px; line-height: 1; }
+  .reader-tabs { flex: none; display: flex; gap: 6px; padding: 10px 22px; overflow-x: auto;
+    background: #fff; border-bottom: 1px solid var(--line); }
+  .reader-tab { flex: none; padding: 5px 10px; border-radius: 999px; color: var(--ink-soft); font-size: 11.5px; }
+  .reader-tab.on { color: #8a5a10; border-color: var(--accent-line); background: var(--accent-soft); }
+  .reader-source { flex: none; padding: 8px 22px; font-size: 11.5px; background: var(--accent-soft); }
+  .reader-source a { color: #8a5a10; text-decoration: none; }
+  .reader-body { flex: 1; min-height: 0; overflow-y: auto; padding: 8px 28px 70px; line-height: 1.85; }
+  .reader-body h2 { margin: 30px 0 12px; padding: 0; border: 0; font-size: 23px; line-height: 1.45; }
+  .reader-body h2 .num { display: block; margin-bottom: 4px; color: var(--accent); font-family: var(--mono);
+    font-size: 11px; letter-spacing: 1px; }
+  .reader-body h3 { margin: 28px 0 8px; font-size: 16px; }
+  .reader-body h5 { margin: 0 0 5px; font-size: 13px; }
+  .reader-body p { margin: 0 0 15px; font-size: 14px; }
+  .reader-body .lead { padding: 12px 15px; border-left: 3px solid var(--accent-line); border-radius: 0 8px 8px 0;
+    background: var(--accent-soft); }
+  .reader-body .note { margin: 0 0 18px; border: 0; border-left: 2px solid var(--line); border-radius: 0;
+    background: none; padding: 0 0 0 12px; }
+  .reader-body code { padding: 1px 4px; border-radius: 4px; background: #f1f3f6; font-family: var(--mono); font-size: 12px; }
+  .reader-body pre { overflow-x: auto; padding: 12px 14px; border: 1px solid var(--line); border-radius: 9px; background: #f8fafc; }
+  .reader-body pre code { padding: 0; background: none; line-height: 1.7; }
+  .reader-body table { display: block; width: 100%; overflow-x: auto; border-collapse: collapse; margin: 0 0 20px; font-size: 12.5px; }
+  .reader-body th, .reader-body td { padding: 8px 9px; border-bottom: 1px solid var(--line-soft); text-align: left; vertical-align: top; }
+  .reader-body th { color: var(--ink-faint); font-size: 11px; font-weight: 500; }
+  .reader-body td.k { color: var(--accent); font-family: var(--mono); white-space: nowrap; }
+  .reader-body .check { margin: 20px 0; padding: 14px 15px; border: 1px dashed var(--line); border-radius: 10px; background: #fff; }
+  .reader-body .check .q { margin-bottom: 9px; font-size: 13px; }
+  .reader-body .check .q::before { content: "检查点"; display: block; color: var(--accent); font-size: 10px; letter-spacing: 1px; }
+  .reader-body .check button { padding: 4px 10px; color: var(--accent); border-color: var(--accent-line); font-size: 11.5px; }
+  .reader-body .check .a { display: none; margin-top: 10px; color: var(--ink-soft); font-size: 13px; }
+  .reader-body .check.open .a { display: block; }
+  .reader-body .cols2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .reader-body .box { padding: 12px 14px; border: 1px solid var(--line); border-radius: 9px; background: #fff; }
+  .reader-body .box p { margin: 0; font-size: 12.5px; }
+  .reader-body .end-note { padding: 15px; border: 1px solid var(--line); border-radius: 10px; background: #f8fafc; font-size: 13px; }
+  .reader-loading { padding: 50px 0; text-align: center; color: var(--ink-faint); font-size: 13px; }
+  .reader-quiz-link { margin: 18px 0; padding: 16px; border: 1px solid var(--accent-line); border-radius: 10px; background: var(--accent-soft); }
+  .reader-quiz-link a { color: #8a5a10; font-weight: 650; }
+
   @media (max-width: 900px) {
     .split { grid-template-columns: 1fr; }
     .three { grid-template-columns: 1fr; }
     .station { padding: 14px 14px 80px; }
     #stageWrap { height: calc(100vh - 300px); }
+    .reader-body { padding: 6px 20px 60px; }
+    .reader-body .cols2 { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 600px) {
+    .footbar { padding: 9px 12px; gap: 7px; }
+    .foot-center { gap: 6px; }
+    .footbar .where { font-size: 10.5px; }
+    .foot-center button { padding: 5px 7px; }
+    .reader-head, .reader-tabs { padding-left: 16px; padding-right: 16px; }
+    .reader-source { padding-left: 16px; }
+    .mission-read { order: 5; margin-left: 0; }
+    .mission-read + .state { margin-left: auto; }
   }
 </style>
 </head>
@@ -750,7 +819,7 @@
     </div>
   </section>
 
-  <!-- ═════ 7 实况 ═════ -->
+  <!-- ═════ 8 实况 ═════ -->
   <section class="station" id="st8">
     <div class="inner">
       <div class="mission" id="m8">
@@ -791,7 +860,7 @@
       </div>
 
       <div class="graduate" id="graduate" style="display:none;">
-        <h4>七关全过了</h4>
+        <h4>八关全过了</h4>
         <p style="margin:6px 0 0;">
           你现在已经知道了：试错怎么记分、表怎么装不下、奖励写歪会怎样、训练曲线为什么先平后陡、
           怎么判断它是真会还是装的、以及这台鸭子为什么头重脚轻。
@@ -817,9 +886,27 @@
 
 <div class="footbar">
   <button id="prev">上一关</button>
-  <div class="where" id="where">第 1 关 / 共 8 关</div>
+  <div class="foot-center">
+    <div class="where" id="where">第 1 关 / 共 8 关</div>
+    <button id="btnReview">复习 · 术语</button>
+  </div>
   <button class="primary" id="next">下一关</button>
 </div>
+
+<div class="reader-backdrop" id="readerBackdrop" hidden></div>
+<aside class="reader" id="reader" role="dialog" aria-modal="true" aria-labelledby="readerTitle" hidden>
+  <div class="reader-head">
+    <div class="reader-heading">
+      <div class="reader-kicker">边做边读 · 与当前实验对应</div>
+      <h2 id="readerTitle">本关读本</h2>
+      <p>读不懂时展开，关掉就接着做；文字与完整读本保持同一份来源。</p>
+    </div>
+    <button class="reader-close" id="readerClose" aria-label="关闭读本">×</button>
+  </div>
+  <div class="reader-tabs" id="readerTabs" aria-label="相关章节"></div>
+  <div class="reader-source"><a id="readerSource" href="./start-here.html">在完整读本中打开这一章 ↗</a></div>
+  <article class="reader-body" id="readerBody"></article>
+</aside>
 
 <script type="module">
 /* ════════════════════════════════════════════════════════════
@@ -885,6 +972,147 @@ function go(n) {
 }
 document.getElementById('prev').onclick = () => go(cur - 1);
 document.getElementById('next').onclick = () => go(cur === TOTAL ? 1 : cur + 1);
+
+/* ════════════════════════════════════════════════════════════
+   课内读本：按关卡抽取 start-here.html，互动实验仍留在关卡里
+   ════════════════════════════════════════════════════════════ */
+const LESSON_READING = {
+  1: ['c0'],
+  2: ['c1', 'c3', 'c4', 'c5'],
+  3: ['c2', 'c6'],
+  4: ['c2', 'c7'],
+  5: ['c7'],
+  6: ['c0', 'c7'],
+  7: ['c2', 'c6', 'c7'],
+  8: ['c0', 'c2', 'c7', 'run'],
+};
+const CHAPTER_SHORT = {
+  c0: '为什么站不住', c1: '什么叫学习', c2: '观测与动作', c3: 'Q 表',
+  c4: '更新公式', c5: '探索与折扣', c6: '为什么用网络', c7: '真实训练',
+  c8: '自测十题', app: '术语表', run: '动手实践',
+};
+const reader = document.getElementById('reader');
+const readerBackdrop = document.getElementById('readerBackdrop');
+const readerBody = document.getElementById('readerBody');
+const readerTabs = document.getElementById('readerTabs');
+let readerSourcePromise = null;
+let readerChapters = [];
+let readerChapter = '';
+let readerReturnFocus = null;
+let readerRenderToken = 0;
+
+function loadReaderSource() {
+  if (!readerSourcePromise) {
+    readerSourcePromise = fetch('./start-here.html')
+      .then((res) => {
+        if (!res.ok) throw new Error(`读本该页载入失败：${res.status}`);
+        return res.text();
+      })
+      .then((html) => new DOMParser().parseFromString(html, 'text/html').querySelector('article'));
+  }
+  return readerSourcePromise;
+}
+
+function extractReaderChapter(article, id) {
+  const heading = article.querySelector(`h2#${id}`);
+  if (!heading) throw new Error(`读本里找不到章节 ${id}`);
+  const fragment = document.createDocumentFragment();
+  let node = heading;
+  while (node) {
+    if (node !== heading && node.tagName === 'H2') break;
+    // 原读本的互动实验已由八关课程承担，只抽取解释、表格和检查点。
+    if (!node.classList.contains('lab') && !(id === 'c8' && node.id === 'quiz')) {
+      fragment.appendChild(node.cloneNode(true));
+    }
+    node = node.nextElementSibling;
+  }
+  fragment.querySelectorAll('script, .lab').forEach((el) => el.remove());
+  fragment.querySelectorAll('[id], [onclick]').forEach((el) => {
+    el.removeAttribute('id');
+    el.removeAttribute('onclick');
+  });
+  fragment.querySelectorAll('a[href^="#"]').forEach((a) => {
+    a.href = `./start-here.html${a.getAttribute('href')}`;
+  });
+  return fragment;
+}
+
+async function renderReaderChapter(id) {
+  readerChapter = id;
+  const token = ++readerRenderToken;
+  readerTabs.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b.dataset.chapter === id));
+  document.getElementById('readerSource').href = `./start-here.html#${id}`;
+  readerBody.innerHTML = '<div class="reader-loading">正在打开对应章节…</div>';
+  readerBody.scrollTop = 0;
+  try {
+    const article = await loadReaderSource();
+    if (token !== readerRenderToken) return;
+    const content = extractReaderChapter(article, id);
+    readerBody.replaceChildren(content);
+    if (id === 'c8') {
+      const link = document.createElement('div');
+      link.className = 'reader-quiz-link';
+      link.innerHTML = '十道题在完整读本里逐题展开。<br><a href="./start-here.html#c8">开始自测十题 ↗</a>';
+      readerBody.appendChild(link);
+    }
+  } catch (err) {
+    if (token !== readerRenderToken) return;
+    readerBody.innerHTML = '<div class="reader-loading">这一章暂时没能展开。你仍可以通过上方链接打开完整读本。</div>';
+    console.error(err);
+  }
+}
+
+function openReader(chapters, title) {
+  readerReturnFocus = document.activeElement;
+  readerChapters = chapters;
+  document.getElementById('readerTitle').textContent = title;
+  readerTabs.innerHTML = chapters.map((id) =>
+    `<button class="reader-tab" data-chapter="${id}">${CHAPTER_SHORT[id]}</button>`).join('');
+  reader.hidden = false;
+  readerBackdrop.hidden = false;
+  renderReaderChapter(chapters[0]);
+  document.getElementById('readerClose').focus();
+}
+
+function closeReader() {
+  if (reader.hidden) return;
+  reader.hidden = true;
+  readerBackdrop.hidden = true;
+  readerRenderToken += 1;
+  if (readerReturnFocus && readerReturnFocus.isConnected) readerReturnFocus.focus();
+}
+
+for (let i = 1; i <= TOTAL; i++) {
+  const button = document.createElement('button');
+  button.className = 'mission-read';
+  button.textContent = `本关读本 · ${LESSON_READING[i].length} 篇`;
+  button.setAttribute('aria-label', `打开第 ${i} 关对应的深度读本`);
+  button.onclick = () => openReader(LESSON_READING[i], `第 ${i} 关 · 对照读本`);
+  const mission = document.getElementById(`m${i}`);
+  mission.insertBefore(button, mission.querySelector('.state'));
+}
+document.getElementById('btnReview').onclick = () => openReader(['c8', 'app', 'run'], '复习 · 术语 · 动手');
+readerTabs.onclick = (event) => {
+  const button = event.target.closest('button[data-chapter]');
+  if (button && readerChapters.includes(button.dataset.chapter)) renderReaderChapter(button.dataset.chapter);
+};
+readerBody.addEventListener('click', (event) => {
+  const button = event.target.closest('.check > button');
+  if (!button) return;
+  const check = button.parentElement;
+  check.classList.toggle('open');
+  button.textContent = check.classList.contains('open') ? '收起答案' : '看答案';
+});
+document.getElementById('readerClose').onclick = closeReader;
+readerBackdrop.onclick = closeReader;
+window.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape') closeReader();
+});
+function openReviewFromHash() {
+  if (location.hash === '#review') openReader(['c8', 'app', 'run'], '复习 · 术语 · 动手');
+}
+window.addEventListener('hashchange', openReviewFromHash);
+openReviewFromHash();
 
 /* ════════════════════════════════════════════════════════════
    第一关：人机赛跑
@@ -2672,7 +2900,7 @@ async function renderNet() {
 })();
 
 /* ════════════════════════════════════════════════════════════
-   第六关的通关判定（物理代码在下面）
+   第八关的通关判定（物理代码在下面）
    ════════════════════════════════════════════════════════════ */
 setInterval(() => {
   if (cur !== 8) return;
@@ -2680,15 +2908,15 @@ setInterval(() => {
   const pct = Math.min(100, (s / 10) * 100);
   const fill = document.getElementById('tlFill');
   if (fill) fill.style.width = pct + '%';
-  const st = document.getElementById('m7state');
+  const st = document.getElementById('m8state');
   if (st) {
-    st.textContent = s >= 10 ? '已通关 10 秒' : `${s.toFixed(1)} / 10 秒`;
+    st.textContent = s >= 10 ? '已通关 10 秒' : `最长 ${s.toFixed(1)} / 10 秒`;
     if (s >= 10) mark('s8');
   }
 }, 250);
 
 /* ════════════════════════════════════════════════════════════
-   第六站：真策略 + 真物理
+   第八关：真策略 + 真物理
    ════════════════════════════════════════════════════════════ */
 let duckInit = false;
 let policyOn = true;
@@ -2865,6 +3093,9 @@ async function initDuck() {
       mujoco.mj_forward(model, data);
       standingSteps = 0;
       pokeTimer = 0;
+      simTime = 0;
+      acc = 0;
+      fallTimer = 0;
       updateBodyTransforms({ model, data, bodies: built.bodies });
     }
 
@@ -2891,14 +3122,15 @@ async function initDuck() {
       data.xfrc_applied.fill(0);
 
       simTime += CTRL_DT;
-      // xmat 是扁平数组且含 world body（长度 nbody*9），取躯干局部 z 轴在世界 z 上的投影
+      // 与训练环境一致：躯干局部 z 轴的世界投影低于 cos(45°)，或高度低于 6cm，都算摔倒。
+      const upright = data.xmat[trunk * 9 + 8];
       const h = data.qpos[2];
-      // 训练环境用的终止条件就是「躯干掉到 6cm 以下」，这里保持一致
-      if (h > 0.062) standingSteps += 1;   // 6cm 是训练环境里的死亡线
+      const alive = upright >= Math.cos(Math.PI / 4) && h >= 0.06;
+      if (alive) standingSteps += 1;
       else standingSteps = 0;
 
       // 真倒了就自动扶起来，免得停在躺着的画面上
-      if (h < 0.055) {
+      if (!alive) {
         fallTimer += CTRL_DT;
         if (fallTimer > 1.2) { fallTimer = 0; resetDuck(); }
       } else {
@@ -2907,8 +3139,8 @@ async function initDuck() {
 
       document.getElementById('cHeight').innerHTML = `高度 <b>${(data.qpos[2] * 100).toFixed(1)} cm</b>`;
       const upEl = document.getElementById('cUpright');
-      upEl.innerHTML = `状态 <b>${h > 0.062 ? '站着' : '倒了'}</b>`;
-      upEl.className = 'chip ' + (h > 0.062 ? 'good' : 'bad');
+      upEl.innerHTML = `状态 <b>${alive ? '站着' : '倒了'}</b>`;
+      upEl.className = 'chip ' + (alive ? 'good' : 'bad');
       document.getElementById('cTime').innerHTML = `已站 <b>${(standingSteps * 0.02).toFixed(1)} s</b>`;
       window.__standSec = standingSteps * 0.02;
       window.__standBest = Math.max(window.__standBest || 0, window.__standSec);
@@ -2916,19 +3148,24 @@ async function initDuck() {
 
     function loop(now) {
       requestAnimationFrame(loop);
-      // 第一帧没有上一帧时间，直接跳过；其余情况把 dt 夹在 [0, 50ms]，避免后台切回时物理暴走
-      const dt = last ? Math.max(0, Math.min((now - last) / 1000, 0.05)) : 0;
+      // 离开本关或切到后台后不再推进物理，回来时也不会补算一大段离屏时间。
+      const active = cur === 8 && !document.hidden && reader.hidden;
+      const dt = active && last ? Math.max(0, Math.min((now - last) / 1000, 0.05)) : 0;
       last = now;
-      acc = Math.min(acc + dt, 0.2);
-      let guard = 0;
-      while (acc >= CTRL_DT && guard < 6) {
-        controlStep();
-        acc -= CTRL_DT;
-        guard += 1;
+      if (active) {
+        acc = Math.min(acc + dt, 0.2);
+        let guard = 0;
+        while (acc >= CTRL_DT && guard < 6) {
+          controlStep();
+          acc -= CTRL_DT;
+          guard += 1;
+        }
+        updateBodyTransforms({ model, data, bodies: built.bodies });
+        controls.update();
+        renderer.render(scene, camera);
+      } else {
+        acc = 0;
       }
-      updateBodyTransforms({ model, data, bodies: built.bodies });
-      controls.update();
-      renderer.render(scene, camera);
     }
     requestAnimationFrame(loop);
 

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>MicroDuck 模拟器 · 开源双足桌面机器人</title>
+<title>MicroDuck 物理沙盒 · 真实策略实验台</title>
 <link rel="stylesheet" href="./css/style.css" />
 <link rel="stylesheet" href="./css/site.css" />
 <script src="./js/site.js" defer></script>
@@ -22,7 +22,7 @@
   <div class="brand">
     <div class="brand-mark">M</div>
     <div class="brand-text">
-      <h1>MicroDuck 模拟器</h1>
+      <h1>MicroDuck 物理沙盒</h1>
       <p>Pollen Robotics 开源双足桌面机器人 · MuJoCo 物理引擎跑在浏览器里</p>
     </div>
   </div>
@@ -49,7 +49,7 @@
 
     <div class="toolbar">
       <button id="btn-play" class="btn primary" title="空格键切换">暂停</button>
-      <button id="btn-step" class="btn" title="前进 10 个物理步">单步</button>
+      <button id="btn-step" class="btn" title="前进 20 ms：10 个物理步，也是 1 次策略决策">单步 20 ms</button>
       <button id="btn-reset" class="btn">重置</button>
       <span class="divider"></span>
       <div class="speeds" role="group" aria-label="仿真速度">
@@ -84,6 +84,43 @@
         <option value="scene_walk.xml">行走模型 · 仅自碰撞（scene_walk）</option>
         <option value="scene_rollers.xml">滚轮脚（scene_rollers）</option>
       </select>
+    </section>
+
+    <section class="card policy-card">
+      <div class="card-head">
+        <h2>强化学习实验台</h2>
+        <span class="mode-badge" id="policy-mode-badge">手动控制</span>
+      </div>
+      <div class="mode-switch" role="group" aria-label="控制方式">
+        <button id="btn-manual" class="active" aria-pressed="true">手动调关节</button>
+        <button id="btn-policy-control" aria-pressed="false" disabled>真实策略接管</button>
+      </div>
+      <div class="param policy-eval-row">
+        <div class="param-head">
+          <label for="policy-eval">策略执行方式</label>
+          <span class="value">36 → 64 → 64 → 14</span>
+        </div>
+        <select id="policy-eval" class="select" disabled>
+          <option value="deterministic">确定性：每次直接取动作均值</option>
+          <option value="sample">采样：加入训练时学到的随机噪声</option>
+        </select>
+      </div>
+      <p class="card-note" id="policy-note">载入真实 PPO 策略后，可让它每 20 ms 读取 36 个数并调整 14 个关节。</p>
+      <dl class="telemetry rl-metrics">
+        <div><dt>本步奖励</dt><dd id="r-reward">—</dd></div>
+        <div><dt>累计回报</dt><dd id="r-return">—</dd></div>
+        <div><dt>直立度</dt><dd id="r-upright">—</dd></div>
+        <div><dt>回合进度</dt><dd id="r-episode">—</dd></div>
+      </dl>
+      <div class="episode-state" id="r-done">策略模式尚未开启</div>
+      <details class="policy-details">
+        <summary>拆开看这一次决策：36 维输入 / 14 维输出</summary>
+        <div class="formula-note">动作不是绝对角度：目标角 = STAND 角度 + 0.35 × 动作<br>奖励 = 1 + 0.5 × max(直立度, 0) − 0.02 × 动作平方和 ÷ 14</div>
+        <h3>输入：网络此刻看到的 36 个数</h3>
+        <div class="vector-list" id="policy-obs"></div>
+        <h3>输出：14 个关节的目标角偏移</h3>
+        <div class="vector-list actions" id="policy-act"></div>
+      </details>
     </section>
 
     <section class="card">

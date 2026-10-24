@@ -43,10 +43,10 @@
 | 入口 | 内容 |
 | --- | --- |
 | `index.html` | 整站首页与学习路线 |
-| `simulator.html` | MuJoCo + three.js 物理模拟器 |
+| `simulator.html` | MuJoCo + three.js 物理沙盒与真实策略实验台 |
 | `cover.html` | 旧封面地址的兼容跳转 |
-| `rl-lab/course.html` | 八关互动课程 |
-| `rl-lab/start-here.html` | 零基础文字读本与自测 |
+| `rl-lab/course.html` | 八关互动课程，按关卡展开对应读本 |
+| `rl-lab/start-here.html` | 读本唯一内容源、完整阅读与自测 |
 | `rl-lab/stepper.html` | Q-learning 单步调试器 |
 | `rl-lab/player.html` | CartPole 训练前后回放 |
 | `rl-lab/01_…05_*.py` | 五个可运行的强化学习脚本 |
@@ -74,6 +74,9 @@ python3 -m venv .venv
 - 拖拽旋转、滚轮缩放；鼠标直接拖动机器人部位施加外力。
 - 暂停、单步、0.25× / 1× / 2× 速度，以及 INIT / STAND / SIT / FOLD 姿态。
 - 14 个执行器的目标角与实际角、舵机刚度、悬吊模式、碰撞体显示。
+- 可切换手动 / 真实 PPO 策略，以及确定性 / 采样执行；策略每 20 ms 决策一次，单步按钮也推进 20 ms。
+- 实时展开 36 维观测、14 维动作、本步奖励、累计回报、直立度、回合进度和终止原因。
+- 策略模式锁定训练场景、1× 舵机刚度与手动关节；推挤、暂停、复位和回合终止都可直接操作。
 - 默认 `scene.xml` 有完整地面接触；`scene_walk.xml` 是训练专用场景，摔倒时部分身体可能穿地。
 - 根模拟器没有行走控制器；MicroDuck 的官方行走能力来自 RL 策略，本项目只教授并演示站立策略。
 
