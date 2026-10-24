@@ -21,6 +21,12 @@ export const OBS_NAMES = [
   '根节点高度',
 ];
 
+export const WALK_OBS_NAMES = [
+  ...OBS_NAMES,
+  '世界系前进速度', '世界系横向速度', '步态相位 sin', '步态相位 cos',
+  '目标前进速度', '左脚接触', '右脚接触',
+];
+
 export const ACT_NAMES = [
   '左髋偏航', '左髋横滚', '左髋俯仰', '左膝', '左踝',
   '颈俯仰', '头俯仰', '头偏航', '头横滚',
@@ -43,8 +49,8 @@ function checkLayer(layer, inputDim, label) {
 }
 
 export function validatePolicy(net) {
-  if (!net || net.obs_dim !== 36 || net.act_dim !== 14) {
-    throw new Error('策略必须是 36 维观测、14 维动作');
+  if (!net || ![36, 43].includes(net.obs_dim) || net.act_dim !== 14) {
+    throw new Error('策略必须是 36 维站立观测或 43 维行走观测，并有 14 维动作');
   }
   if (net.activation !== 'tanh' || !Array.isArray(net.layers) || net.layers.length !== 2) {
     throw new Error('策略结构应为两层 tanh 隐藏层');
@@ -55,7 +61,7 @@ export function validatePolicy(net) {
     inputDim = layer.w.length;
   });
   if (net.layers[0].w.length !== 64 || net.layers[1].w.length !== 64) {
-    throw new Error('策略结构应为 36 → 64 → 64 → 14');
+    throw new Error(`策略结构应为 ${net.obs_dim} → 64 → 64 → 14`);
   }
   checkLayer(net.action_head, inputDim, '动作头');
   if (net.action_head.w.length !== net.act_dim) throw new Error('动作头输出不是 14 维');
@@ -114,6 +120,20 @@ export class DuckPolicyRuntime {
     this.model = model;
     this.data = data;
     this.net = net;
+    this.task = net.task || (net.obs_dim === 43 ? 'walk' : 'stand');
+    if (!['stand', 'walk'].includes(this.task)) throw new Error(`未知策略任务：${this.task}`);
+    if ((this.task === 'walk') !== (net.obs_dim === 43)) throw new Error('任务类型与观测维度不一致');
+    this.targetVelocity = Number.isFinite(net.target_velocity) ? net.target_velocity : 0.05;
+    this.gaitPeriod = Number.isFinite(net.gait_period) ? net.gait_period : 40;
+    this.maxSteps = this.task === 'walk' ? (net.max_steps || 1000) : RL.maxSteps;
+    this.floorGeom = -1;
+    this.footGeoms = [-1, -1];
+    if (this.task === 'walk') {
+      this.floorGeom = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_GEOM.value, 'floor');
+      ['left_foot_collision', 'right_foot_collision'].forEach((name, i) => {
+        this.footGeoms[i] = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_GEOM.value, name);
+      });
+    }
     this.qposAdr = [];
     this.dofAdr = [];
     for (let j = 1; j < model.njnt; j++) {
@@ -150,6 +170,11 @@ export class DuckPolicyRuntime {
     this.upright = this.getUpright();
     this.height = this.data.qpos[2];
     this.doneReason = '';
+    this.originX = this.data.qpos[0];
+    this.originY = this.data.qpos[1];
+    this.distance = 0;
+    this.forwardSpeed = 0;
+    this.lateralSpeed = 0;
     this.lastObservation = this.getObservation();
     this.lastAction = new Float64Array(this.net.act_dim);
     this.seed = 20261023;
@@ -163,14 +188,40 @@ export class DuckPolicyRuntime {
     return Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
   }
 
+  getFootContacts() {
+    const contacts = [0, 0];
+    if (this.task !== 'walk' || this.footGeoms.some((id) => id < 0)) return contacts;
+    const { data } = this;
+    for (let i = 0; i < data.ncon; i++) {
+      const contact = data.contact[i] || data.contact.get?.(i);
+      if (!contact) continue;
+      for (let foot = 0; foot < 2; foot++) {
+        if ((contact.geom1 === this.footGeoms[foot] && contact.geom2 === this.floorGeom) ||
+            (contact.geom2 === this.footGeoms[foot] && contact.geom1 === this.floorGeom)) contacts[foot] = 1;
+      }
+    }
+    return contacts;
+  }
+
   getObservation() {
     const { data } = this;
-    const obs = new Float64Array(36);
+    const obs = new Float64Array(this.net.obs_dim);
     obs[0] = data.qpos[3]; obs[1] = data.qpos[4]; obs[2] = data.qpos[5]; obs[3] = data.qpos[6];
     obs[4] = data.qvel[3]; obs[5] = data.qvel[4]; obs[6] = data.qvel[5];
     for (let i = 0; i < 14; i++) obs[7 + i] = data.qpos[this.qposAdr[i]];
     for (let i = 0; i < 14; i++) obs[21 + i] = data.qvel[this.dofAdr[i]];
     obs[35] = data.qpos[2];
+    if (this.task === 'walk') {
+      const phase = 2 * Math.PI * ((this.steps % this.gaitPeriod) / this.gaitPeriod);
+      const contacts = this.getFootContacts();
+      obs[36] = data.qvel[0];
+      obs[37] = data.qvel[1];
+      obs[38] = Math.sin(phase);
+      obs[39] = Math.cos(phase);
+      obs[40] = this.targetVelocity;
+      obs[41] = contacts[0];
+      obs[42] = contacts[1];
+    }
     return obs;
   }
 
@@ -205,11 +256,22 @@ export class DuckPolicyRuntime {
     for (const action of this.lastAction) actionPenalty += action * action;
     this.actionPenalty = actionPenalty;
     this.reward = 1 + 0.5 * Math.max(this.upright, 0) - 0.02 * actionPenalty / this.model.nu;
+    if (this.task === 'walk') {
+      this.forwardSpeed = this.data.qvel[0];
+      this.lateralSpeed = this.data.qvel[1];
+      this.distance = this.data.qpos[0] - this.originX;
+      const velocityError = (this.forwardSpeed - this.targetVelocity) / 0.08;
+      const velocityTracking = 2 * Math.exp(-velocityError * velocityError);
+      const aliveUpright = 0.2 + 0.5 * Math.max(this.upright, 0);
+      const lateralPenalty = 0.5 * Math.abs(this.lateralSpeed) + 2 * this.lateralSpeed ** 2;
+      const heightPenalty = 2 * (this.height - 0.12) ** 2;
+      this.reward = velocityTracking + aliveUpright - 0.03 * actionPenalty / this.model.nu - lateralPenalty - heightPenalty;
+    }
     this.totalReturn += this.reward;
 
     if (this.upright < RL.tiltLimit) this.doneReason = '终止：躯干倾斜超过 45°';
     else if (this.height < RL.heightLimit) this.doneReason = '终止：根节点高度低于 6 cm';
-    else if (this.steps >= RL.maxSteps) this.doneReason = '完成：500 步 / 10 秒';
+    else if (this.steps >= this.maxSteps) this.doneReason = `完成：${this.maxSteps} 步 / ${(this.maxSteps * RL.controlDt).toFixed(0)} 秒`;
     return this;
   }
 }

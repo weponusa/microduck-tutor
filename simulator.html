@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>MicroDuck 物理沙盒 · 真实策略实验台</title>
+<title>MicroDuck 物理沙盒 · 真实训练与策略测试</title>
 <link rel="stylesheet" href="./css/style.css" />
 <link rel="stylesheet" href="./css/site.css" />
 <script src="./js/site.js" defer></script>
@@ -86,9 +86,66 @@
       </select>
     </section>
 
+    <section class="card training-card">
+      <div class="card-head">
+        <h2>真实训练室 · PPO</h2>
+        <span class="mode-badge" id="training-badge">尚未开始</span>
+      </div>
+      <p class="card-note">这里会真的更新 actor 和 critic 的权重，不是播放预录轨迹。训练在独立物理环境中进行；左侧画面只用于测试。</p>
+      <div class="training-selects">
+        <label>训练任务
+          <select id="training-task" class="select">
+            <option value="stand">站立：尽量久地保持直立</option>
+            <option value="walk">行走实验：目标前进 5 cm/s</option>
+          </select>
+        </label>
+        <label>初始权重
+          <select id="training-init" class="select">
+            <option value="scratch">从零开始：随机小权重</option>
+            <option value="pretrained">站立微调：载入已有 actor</option>
+            <option value="resume">继续本地检查点</option>
+          </select>
+        </label>
+      </div>
+      <div class="training-actions">
+        <button id="btn-train-start" class="btn primary">开始训练</button>
+        <button id="btn-train-pause" class="btn" disabled>暂停</button>
+        <button id="btn-train-reset" class="btn" title="清空当前任务的本地检查点并重新初始化">重新初始化</button>
+      </div>
+      <div class="training-state" id="training-state">选择任务后开始。站立可从零训练，也可用现有策略微调；行走使用独立 43 维观测和独立权重。</div>
+      <dl class="telemetry training-metrics">
+        <div><dt>训练轮次</dt><dd id="train-iteration">0</dd></div>
+        <div><dt>物理决策步</dt><dd id="train-steps">0</dd></div>
+        <div><dt>平均回合回报</dt><dd id="train-return">—</dd></div>
+        <div><dt>最近回合回报</dt><dd id="train-last-return">—</dd></div>
+        <div><dt>策略损失</dt><dd id="train-policy-loss">—</dd></div>
+        <div><dt>价值损失</dt><dd id="train-value-loss">—</dd></div>
+        <div><dt>探索熵</dt><dd id="train-entropy">—</dd></div>
+        <div><dt>actor 权重指纹</dt><dd id="train-checksum">—</dd></div>
+      </dl>
+      <canvas id="training-chart" class="training-chart" width="640" height="180" aria-label="训练回报与损失曲线"></canvas>
+      <div class="training-walk-metrics" id="training-walk-metrics" hidden>
+        <span>位移 <b id="train-distance">—</b></span>
+        <span>前进速度 <b id="train-vx">—</b></span>
+        <span>横移速度 <b id="train-vy">—</b></span>
+      </div>
+      <div class="training-actions secondary">
+        <button id="btn-train-test" class="btn" disabled>测试当前策略</button>
+        <button id="btn-train-export" class="btn" disabled>导出策略 JSON</button>
+        <button id="btn-train-save" class="btn" disabled>保存检查点</button>
+      </div>
+      <p class="checkpoint-note" id="checkpoint-note">暂停只冻结本次训练；保存检查点后，刷新页面也能继续。</p>
+      <details class="training-details">
+        <summary>这套训练到底在算什么？</summary>
+        <p>每 20 ms 做一次决策。actor 产出 14 个关节动作，critic 估计状态价值；一批真实物理轨迹经过 GAE 和 PPO 裁剪更新。损失来自反向传播，回报来自 MuJoCo，不由界面生成。</p>
+        <p id="training-task-note">站立：36 维观测，45° 倾斜或低于 6 cm 终止，500 步超时。超时截断会用 critic  bootstrap，不与摔倒混为一谈。</p>
+        <p class="experiment-warning" id="walk-warning" hidden>行走目前是训练实验：回报上升或位置移动不等于已经走稳。还要检查完整碰撞、左右脚交替、摆动相和非预期身体触地。</p>
+      </details>
+    </section>
+
     <section class="card policy-card">
       <div class="card-head">
-        <h2>强化学习实验台</h2>
+        <h2>策略测试台</h2>
         <span class="mode-badge" id="policy-mode-badge">手动控制</span>
       </div>
       <div class="mode-switch" role="group" aria-label="控制方式">
@@ -98,7 +155,7 @@
       <div class="param policy-eval-row">
         <div class="param-head">
           <label for="policy-eval">策略执行方式</label>
-          <span class="value">36 → 64 → 64 → 14</span>
+          <span class="value" id="policy-structure">36 → 64 → 64 → 14</span>
         </div>
         <select id="policy-eval" class="select" disabled>
           <option value="deterministic">确定性：每次直接取动作均值</option>
@@ -114,9 +171,9 @@
       </dl>
       <div class="episode-state" id="r-done">策略模式尚未开启</div>
       <details class="policy-details">
-        <summary>拆开看这一次决策：36 维输入 / 14 维输出</summary>
-        <div class="formula-note">动作不是绝对角度：目标角 = STAND 角度 + 0.35 × 动作<br>奖励 = 1 + 0.5 × max(直立度, 0) − 0.02 × 动作平方和 ÷ 14</div>
-        <h3>输入：网络此刻看到的 36 个数</h3>
+        <summary id="policy-vector-title">拆开看这一次决策：36 维输入 / 14 维输出</summary>
+        <div class="formula-note" id="policy-formula">动作不是绝对角度：目标角 = STAND 角度 + 0.35 × 动作<br>奖励 = 1 + 0.5 × max(直立度, 0) − 0.02 × 动作平方和 ÷ 14</div>
+        <h3 id="policy-obs-title">输入：网络此刻看到的 36 个数</h3>
         <div class="vector-list" id="policy-obs"></div>
         <h3>输出：14 个关节的目标角偏移</h3>
         <div class="vector-list actions" id="policy-act"></div>

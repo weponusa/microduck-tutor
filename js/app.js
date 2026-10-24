@@ -2,7 +2,8 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/OrbitControls.js';
 import loadMujoco from '../vendor/mujoco/mujoco.js';
 import { buildMujocoScene, updateBodyTransforms } from './mjcfScene.js';
-import { ACT_NAMES, DuckPolicyRuntime, OBS_NAMES, RL, loadPolicy } from './rlPolicy.js';
+import { ACT_NAMES, DuckPolicyRuntime, OBS_NAMES, RL, WALK_OBS_NAMES, loadPolicy } from './rlPolicy.js';
+import { TrainingClient } from './rlTraining.js';
 
 const MODEL_DIR = './assets/mjcf/microduck/';
 const DEG = 180 / Math.PI;
@@ -35,6 +36,12 @@ const app = {
   policy: null,
   policySample: false,
   policyError: '',
+  policySource: 'pretrained',
+  trainer: null,
+  trainingReady: false,
+  trainingBusy: false,
+  trainingMetrics: null,
+  trainingHistory: [],
 };
 
 const ui = {
@@ -76,6 +83,36 @@ const ui = {
   rDone: document.getElementById('r-done'),
   policyObs: document.getElementById('policy-obs'),
   policyAct: document.getElementById('policy-act'),
+  policyStructure: document.getElementById('policy-structure'),
+  policyVectorTitle: document.getElementById('policy-vector-title'),
+  policyObsTitle: document.getElementById('policy-obs-title'),
+  policyFormula: document.getElementById('policy-formula'),
+  trainingTask: document.getElementById('training-task'),
+  trainingInit: document.getElementById('training-init'),
+  trainingBadge: document.getElementById('training-badge'),
+  trainingState: document.getElementById('training-state'),
+  trainingStart: document.getElementById('btn-train-start'),
+  trainingPause: document.getElementById('btn-train-pause'),
+  trainingReset: document.getElementById('btn-train-reset'),
+  trainingTest: document.getElementById('btn-train-test'),
+  trainingExport: document.getElementById('btn-train-export'),
+  trainingSave: document.getElementById('btn-train-save'),
+  trainingIteration: document.getElementById('train-iteration'),
+  trainingSteps: document.getElementById('train-steps'),
+  trainingReturn: document.getElementById('train-return'),
+  trainingLastReturn: document.getElementById('train-last-return'),
+  trainingPolicyLoss: document.getElementById('train-policy-loss'),
+  trainingValueLoss: document.getElementById('train-value-loss'),
+  trainingEntropy: document.getElementById('train-entropy'),
+  trainingChecksum: document.getElementById('train-checksum'),
+  trainingChart: document.getElementById('training-chart'),
+  trainingWalkMetrics: document.getElementById('training-walk-metrics'),
+  trainingDistance: document.getElementById('train-distance'),
+  trainingVx: document.getElementById('train-vx'),
+  trainingVy: document.getElementById('train-vy'),
+  trainingTaskNote: document.getElementById('training-task-note'),
+  walkWarning: document.getElementById('walk-warning'),
+  checkpointNote: document.getElementById('checkpoint-note'),
 };
 
 /* ── three.js 舞台 ─────────────────────────────── */
@@ -494,7 +531,12 @@ function applyKpScale(scale) {
 
 /* ── 强化学习策略实验台 ───────────────────────── */
 function buildPolicyVectorUI() {
-  ui.policyObs.innerHTML = OBS_NAMES.map((name, i) =>
+  const obsDim = app.policyNet?.obs_dim || 36;
+  const names = obsDim === 43 ? WALK_OBS_NAMES : OBS_NAMES;
+  ui.policyStructure.textContent = `${obsDim} → 64 → 64 → 14`;
+  ui.policyVectorTitle.textContent = `拆开看这一次决策：${obsDim} 维输入 / 14 维输出`;
+  ui.policyObsTitle.textContent = `输入：网络此刻看到的 ${obsDim} 个数`;
+  ui.policyObs.innerHTML = names.map((name, i) =>
     `<div class="vector-row" title="obs[${i}] ${name}"><span class="idx">${i}</span><span class="name">${name}</span><span class="num" id="policy-o-${i}">—</span></div>`).join('');
   ui.policyAct.innerHTML = ACT_NAMES.map((name, i) =>
     `<div class="vector-row" title="action[${i}] ${name}"><span class="idx">${i}</span><span class="name">${name}</span><span class="num" id="policy-a-${i}">—</span></div>`).join('');
@@ -512,7 +554,7 @@ function resetPolicyMetrics() {
   ui.rEpisode.textContent = '—';
   ui.rDone.textContent = app.policyNet ? '策略模式尚未开启' : '策略权重不可用，手动模式不受影响';
   ui.rDone.className = 'episode-state';
-  for (let i = 0; i < 36; i++) document.getElementById(`policy-o-${i}`).textContent = '—';
+  for (let i = 0; i < (app.policyNet?.obs_dim || 36); i++) document.getElementById(`policy-o-${i}`).textContent = '—';
   for (let i = 0; i < 14; i++) document.getElementById(`policy-a-${i}`).textContent = '—';
 }
 
@@ -522,10 +564,10 @@ function updatePolicyTelemetry() {
   ui.rReward.textContent = p.reward === null ? '—' : p.reward.toFixed(4);
   ui.rReturn.textContent = p.totalReturn.toFixed(2);
   ui.rUpright.textContent = p.upright.toFixed(4);
-  ui.rEpisode.textContent = `${p.steps} / ${RL.maxSteps} 步 · ${(p.steps * RL.controlDt).toFixed(2)} s`;
-  ui.rDone.textContent = p.doneReason || (p.steps ? '回合进行中：倾斜超过 45° 或高度低于 6 cm 即终止' : '已从 STAND 复位，等待第一次决策');
-  ui.rDone.className = `episode-state${p.doneReason ? (p.steps >= RL.maxSteps && !p.doneReason.startsWith('终止') ? ' good' : ' bad') : ''}`;
-  for (let i = 0; i < 36; i++) document.getElementById(`policy-o-${i}`).textContent = p.lastObservation[i].toFixed(3);
+  ui.rEpisode.textContent = `${p.steps} / ${p.maxSteps} 步 · ${(p.steps * RL.controlDt).toFixed(2)} s`;
+  ui.rDone.textContent = p.doneReason || (p.steps ? `回合进行中：倾斜超过 45° 或高度低于 6 cm 即终止${p.task === 'walk' ? ` · 前进 ${(p.distance * 100).toFixed(1)} cm` : ''}` : '已从 STAND 复位，等待第一次决策');
+  ui.rDone.className = `episode-state${p.doneReason ? (p.steps >= p.maxSteps && !p.doneReason.startsWith('终止') ? ' good' : ' bad') : ''}`;
+  for (let i = 0; i < p.lastObservation.length; i++) document.getElementById(`policy-o-${i}`).textContent = p.lastObservation[i].toFixed(3);
   for (let i = 0; i < 14; i++) document.getElementById(`policy-a-${i}`).textContent = p.lastAction[i].toFixed(3);
 }
 
@@ -549,7 +591,9 @@ function updateControlModeUI() {
 
 function policyCompatibilityIssue() {
   if (!app.policyNet) return app.policyError || '真实策略尚未载入';
-  if (app.sceneFile !== 'scene.xml') return '这份站立策略只在 scene.xml 上训练；请先切回「站立 · 地面接触」。';
+  const task = app.policyNet.task || (app.policyNet.obs_dim === 43 ? 'walk' : 'stand');
+  if (task === 'stand' && app.sceneFile !== 'scene.xml') return '这份站立策略只在 scene.xml 上训练；请先切回「站立 · 地面接触」。';
+  if (task === 'walk' && !['scene.xml', 'scene_walk.xml'].includes(app.sceneFile)) return '行走实验需要 scene.xml 或 scene_walk.xml；滚轮脚场景不能用于双足步态评估。';
   if (Math.abs(app.kpScale - 1) > 1e-6) return '请把舵机刚度恢复为 1×，否则比较的是改过的物理参数，不是原训练策略。';
   if (app.suspend) return '请先关闭悬吊模式；策略训练时躯干没有被固定在空中。';
   if (!app.policy) return app.policyError || '当前模型与这份策略不兼容';
@@ -557,6 +601,7 @@ function policyCompatibilityIssue() {
 }
 
 function configurePolicyRuntime() {
+  buildPolicyVectorUI();
   app.policy = null;
   app.policyError = '';
   if (app.policyNet) {
@@ -573,6 +618,10 @@ function configurePolicyRuntime() {
   }
   updateControlModeUI();
   updatePolicyTelemetry();
+  const walk = app.policy?.task === 'walk';
+  ui.policyFormula.innerHTML = walk
+    ? '行走实验：目标前进速度 5 cm/s；43 维输入额外包含世界系速度、步态相位与左右脚接触。<br>测试时同时看位移、横移、直立度和终止原因；不能只凭回报判断会走路。'
+    : '动作不是绝对角度：目标角 = STAND 角度 + 0.35 × 动作<br>奖励 = 1 + 0.5 × max(直立度, 0) − 0.02 × 动作平方和 ÷ 14';
 }
 
 function startPolicyEpisode({ autoplay = false } = {}) {
@@ -607,6 +656,261 @@ function setControlMode(mode) {
   }
   app.controlMode = 'policy';
   startPolicyEpisode({ autoplay: true });
+}
+
+/* ── 真实 PPO 训练室 ─────────────────────────── */
+function setTrainingState(text, kind = '') {
+  ui.trainingState.textContent = text;
+  ui.trainingState.className = `training-state${kind ? ` ${kind}` : ''}`;
+}
+
+function finiteMetric(value, digits = 3) {
+  return Number.isFinite(value) ? value.toFixed(digits) : '—';
+}
+
+function resetTrainingMetrics() {
+  app.trainingMetrics = null;
+  app.trainingHistory = [];
+  ui.trainingIteration.textContent = '0';
+  ui.trainingSteps.textContent = '0';
+  ui.trainingReturn.textContent = '—';
+  ui.trainingLastReturn.textContent = '—';
+  ui.trainingPolicyLoss.textContent = '—';
+  ui.trainingValueLoss.textContent = '—';
+  ui.trainingEntropy.textContent = '—';
+  ui.trainingChecksum.textContent = '—';
+  ui.trainingDistance.textContent = '—';
+  ui.trainingVx.textContent = '—';
+  ui.trainingVy.textContent = '—';
+  drawTrainingChart();
+  updateTrainingButtons();
+}
+
+function updateTrainingButtons() {
+  const ready = app.trainingReady;
+  const running = !!app.trainer?.running;
+  const busy = app.trainingBusy;
+  ui.trainingStart.disabled = busy || running;
+  ui.trainingStart.textContent = running ? '训练中…' : (ready ? '继续训练' : '开始训练');
+  ui.trainingPause.disabled = busy || !ready || !running;
+  ui.trainingTest.disabled = busy || !ready;
+  ui.trainingExport.disabled = busy || !ready;
+  ui.trainingSave.disabled = busy || !ready;
+  ui.trainingReset.disabled = busy;
+  ui.trainingTask.disabled = busy || running;
+  ui.trainingInit.disabled = busy || running;
+  ui.trainingBadge.textContent = busy ? '正在初始化' : running ? '真实训练中' : ready ? '已暂停 · 可测试' : '尚未开始';
+  ui.trainingBadge.classList.toggle('on', running);
+}
+
+function updateTrainingTaskUI() {
+  const walk = ui.trainingTask.value === 'walk';
+  const pretrainedOption = ui.trainingInit.querySelector('option[value="pretrained"]');
+  pretrainedOption.disabled = walk;
+  pretrainedOption.textContent = walk ? '站立微调：行走不可直接套用' : '站立微调：载入已有 actor';
+  if (walk && ui.trainingInit.value === 'pretrained') ui.trainingInit.value = 'scratch';
+  ui.trainingWalkMetrics.hidden = !walk;
+  ui.walkWarning.hidden = !walk;
+  ui.trainingTaskNote.textContent = walk
+    ? '行走实验：43 维观测 = 36 维基础状态 + 世界系前进/横向速度 + 步态相位 sin/cos + 目标速度 + 左右脚接触。奖励同时考察前进、直立、动作和横移，与站立权重完全分开。'
+    : '站立：36 维观测，45° 倾斜或低于 6 cm 终止，500 步超时。超时截断会用 critic bootstrap，不与摔倒混为一谈。';
+}
+
+function drawTrainingChart() {
+  const canvas = ui.trainingChart;
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width;
+  const h = canvas.height;
+  ctx.clearRect(0, 0, w, h);
+  ctx.fillStyle = '#fbfcfd';
+  ctx.fillRect(0, 0, w, h);
+  ctx.font = '18px -apple-system, PingFang SC, sans-serif';
+  ctx.fillStyle = '#8a94a0';
+  if (!app.trainingHistory.length) {
+    ctx.fillText('开始训练后，这里画真实回合回报与 PPO 损失', 24, 92);
+    return;
+  }
+  const history = app.trainingHistory;
+  const left = 48;
+  const right = w - 18;
+  const width = right - left;
+  const xAt = (i) => left + (history.length === 1 ? 0 : i / (history.length - 1)) * width;
+
+  function panel(y0, y1, series, colors, labels) {
+    ctx.strokeStyle = '#e8ecf0';
+    ctx.lineWidth = 1;
+    for (let j = 0; j <= 2; j++) {
+      const y = y0 + (y1 - y0) * j / 2;
+      ctx.beginPath(); ctx.moveTo(left, y); ctx.lineTo(right, y); ctx.stroke();
+    }
+    const values = series.flatMap((s) => history.map(s).filter(Number.isFinite));
+    if (!values.length) return;
+    let lo = Math.min(...values);
+    let hi = Math.max(...values);
+    if (Math.abs(hi - lo) < 1e-9) { lo -= 1; hi += 1; }
+    const pad = (hi - lo) * 0.08;
+    lo -= pad; hi += pad;
+    series.forEach((selector, k) => {
+      ctx.strokeStyle = colors[k];
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      let started = false;
+      history.forEach((item, i) => {
+        const value = selector(item);
+        if (!Number.isFinite(value)) return;
+        const x = xAt(i);
+        const y = y1 - (value - lo) / (hi - lo) * (y1 - y0);
+        if (!started) { ctx.moveTo(x, y); started = true; } else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+      ctx.fillStyle = colors[k];
+      ctx.font = '17px -apple-system, PingFang SC, sans-serif';
+      ctx.fillText(labels[k], left + k * 150, y0 - 7);
+    });
+    ctx.fillStyle = '#8a94a0';
+    ctx.font = '14px SFMono-Regular, Consolas, monospace';
+    ctx.fillText(hi.toFixed(2), 4, y0 + 5);
+    ctx.fillText(lo.toFixed(2), 4, y1);
+  }
+
+  panel(28, 100, [(m) => m.meanReturn], ['#1f8a70'], ['平均回合回报']);
+  panel(137, 169, [(m) => m.policyLoss, (m) => m.valueLoss], ['#e08a1e', '#4380ce'], ['策略损失', '价值损失']);
+}
+
+function handleTrainingMetrics(message) {
+  const previous = app.trainingHistory[app.trainingHistory.length - 1];
+  const metric = {
+    iteration: Number(message.iteration ?? message.update ?? previous?.iteration ?? 0),
+    totalSteps: Number(message.totalSteps ?? message.steps ?? previous?.totalSteps ?? 0),
+    meanReturn: Number(message.meanReturn ?? message.episodeReturn ?? message.return ?? NaN),
+    lastReturn: Number(message.lastReturn ?? message.lastEpisodeReturn ?? message.episodeReturn ?? NaN),
+    policyLoss: Number(message.policyLoss ?? message.actorLoss ?? NaN),
+    valueLoss: Number(message.valueLoss ?? message.criticLoss ?? NaN),
+    entropy: Number(message.entropy ?? NaN),
+    actorChecksum: message.actorChecksum ?? message.actor_checksum ?? message.checksum ?? '',
+    distance: Number(message.distance ?? message.meanDistance ?? NaN),
+    vx: Number(message.forwardSpeed ?? message.vx ?? NaN),
+    vy: Number(message.lateralSpeed ?? message.vy ?? NaN),
+    sceneFile: message.sceneFile,
+  };
+  if (!Number.isFinite(metric.meanReturn) && Number.isFinite(metric.lastReturn)) metric.meanReturn = metric.lastReturn;
+  app.trainingMetrics = { ...message, ...metric };
+  if (!previous || metric.iteration !== previous.iteration) {
+    app.trainingHistory.push(metric);
+    if (app.trainingHistory.length > 120) app.trainingHistory.shift();
+  } else {
+    app.trainingHistory[app.trainingHistory.length - 1] = metric;
+  }
+  ui.trainingIteration.textContent = String(metric.iteration);
+  ui.trainingSteps.textContent = metric.totalSteps.toLocaleString('zh-CN');
+  ui.trainingReturn.textContent = finiteMetric(metric.meanReturn, 2);
+  ui.trainingLastReturn.textContent = finiteMetric(metric.lastReturn, 2);
+  ui.trainingPolicyLoss.textContent = finiteMetric(metric.policyLoss, 4);
+  ui.trainingValueLoss.textContent = finiteMetric(metric.valueLoss, 4);
+  ui.trainingEntropy.textContent = finiteMetric(metric.entropy, 4);
+  ui.trainingChecksum.textContent = metric.actorChecksum === '' ? '—' : String(metric.actorChecksum).slice(0, 14);
+  ui.trainingDistance.textContent = Number.isFinite(metric.distance) ? `${(metric.distance * 100).toFixed(1)} cm` : '—';
+  ui.trainingVx.textContent = Number.isFinite(metric.vx) ? `${(metric.vx * 100).toFixed(2)} cm/s` : '—';
+  ui.trainingVy.textContent = Number.isFinite(metric.vy) ? `${(metric.vy * 100).toFixed(2)} cm/s` : '—';
+  drawTrainingChart();
+  if (app.trainer?.running) {
+    setTrainingState(`正在用真实物理轨迹更新参数 · 第 ${metric.iteration} 轮 · 共 ${metric.totalSteps.toLocaleString('zh-CN')} 次决策。左侧测试画面已暂停。`, 'running');
+  }
+}
+
+async function initTraining() {
+  if (app.trainingBusy) return;
+  app.trainingBusy = true;
+  updateTrainingButtons();
+  const task = ui.trainingTask.value;
+  const mode = ui.trainingInit.value;
+  try {
+    setPaused(true);
+    setControlMode('manual');
+    let checkpoint = null;
+    if (mode === 'resume') {
+      checkpoint = await app.trainer.loadCheckpoint(task);
+      if (!checkpoint) throw new Error('这个任务还没有本地检查点。请先训练并保存，或改为从零开始。');
+    }
+    setTrainingState(mode === 'resume' ? '正在恢复 actor、critic、Adam 和训练步数…' : '正在启动第二套 MuJoCo 物理环境…');
+    await app.trainer.init({ task, fromPretrained: mode === 'pretrained', checkpoint });
+    app.trainingReady = true;
+    resetTrainingMetrics();
+    const label = task === 'walk' ? '行走实验' : '站立';
+    setTrainingState(`${label}环境已就绪。点击“开始训练”后才会采样和更新权重；训练期间左侧测试保持暂停。`);
+  } catch (error) {
+    app.trainingReady = false;
+    setTrainingState(error.message, 'error');
+    console.error(error);
+  } finally {
+    app.trainingBusy = false;
+    updateTrainingButtons();
+  }
+}
+
+async function exportTrainingActor() {
+  if (!app.trainingReady) throw new Error('请先初始化并完成至少一次训练准备');
+  const actor = await app.trainer.exportActor();
+  if (!actor) throw new Error('训练引擎没有返回 actor');
+  return actor;
+}
+
+async function testTrainingPolicy() {
+  if (app.trainingBusy) return;
+  app.trainingBusy = true;
+  updateTrainingButtons();
+  try {
+    app.trainer.pause();
+    setTrainingState('正在取出当前 actor 权重并装入左侧物理沙盒…');
+    const actor = await exportTrainingActor();
+    app.policyNet = actor;
+    app.policySource = 'trained';
+    const task = actor.task || ui.trainingTask.value;
+    const sceneFile = app.trainingMetrics?.sceneFile || (task === 'walk' ? 'scene_walk.xml' : 'scene.xml');
+    if (app.sceneFile !== sceneFile) await loadModel(sceneFile);
+    else configurePolicyRuntime();
+    app.controlMode = 'policy';
+    startPolicyEpisode({ autoplay: true });
+    setPolicyNote(`正在测试本次浏览器训练的 ${task === 'walk' ? '行走实验' : '站立'} actor。训练已暂停；这不是预训练权重或预录轨迹。`, 'good');
+    setTrainingState('当前 actor 已装入左侧。你可以切确定性/采样、单步 20 ms 或推一下；点“继续训练”不会改动这份测试快照。');
+  } catch (error) {
+    setTrainingState(`测试失败：${error.message}`, 'error');
+    console.error(error);
+  } finally {
+    app.trainingBusy = false;
+    updateTrainingButtons();
+  }
+}
+
+async function downloadTrainingPolicy() {
+  try {
+    app.trainer.pause();
+    const actor = await exportTrainingActor();
+    const task = actor.task || ui.trainingTask.value;
+    const steps = app.trainingMetrics?.totalSteps || 0;
+    const blob = new Blob([JSON.stringify(actor, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `microduck-${task}-actor-${steps}steps.json`;
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    setTrainingState('已导出当前 actor 推理权重。完整续训状态请用“保存检查点”，它另外包含 critic 和 Adam。');
+  } catch (error) {
+    setTrainingState(`导出失败：${error.message}`, 'error');
+  }
+}
+
+async function saveTrainingCheckpoint() {
+  try {
+    app.trainer.pause();
+    setTrainingState('正在保存 actor、critic、Adam 与训练进度到本机浏览器…');
+    await app.trainer.saveCheckpoint();
+    ui.checkpointNote.textContent = `已保存 ${ui.trainingTask.value === 'walk' ? '行走' : '站立'}检查点。刷新后选择“继续本地检查点”即可恢复。`;
+    setTrainingState('检查点已保存在本机 IndexedDB，不会上传。当前仍处于暂停状态。');
+  } catch (error) {
+    setTrainingState(`保存失败：${error.message}`, 'error');
+  }
 }
 
 /* ── 拖拽施力 ─────────────────────────────────── */
@@ -821,6 +1125,63 @@ ui.policyEval.addEventListener('change', () => {
   updateControlModeUI();
 });
 
+ui.trainingStart.addEventListener('click', async () => {
+  if (!app.trainingReady) {
+    await initTraining();
+    if (!app.trainingReady) return;
+  }
+  try {
+    setPaused(true);
+    app.trainer.start();
+    updateTrainingButtons();
+  } catch (error) {
+    setTrainingState(error.message, 'error');
+  }
+});
+ui.trainingPause.addEventListener('click', () => {
+  app.trainer?.pause();
+  setTrainingState('已暂停：不再采样，也不再更新参数。可测试当前 actor、保存检查点或继续训练。');
+  updateTrainingButtons();
+});
+ui.trainingReset.addEventListener('click', async () => {
+  const taskName = ui.trainingTask.value === 'walk' ? '行走实验' : '站立';
+  if (!window.confirm(`重新初始化${taskName}？这会清空当前训练 worker 和该任务的本地检查点；已导出的 JSON 不受影响。`)) return;
+  app.trainer?.pause();
+  app.trainer?.dispose();
+  app.trainingReady = false;
+  await app.trainer?.clearCheckpoint(ui.trainingTask.value);
+  resetTrainingMetrics();
+  await initTraining();
+});
+ui.trainingTask.addEventListener('change', async () => {
+  app.trainer?.pause();
+  app.trainer?.dispose();
+  app.trainingReady = false;
+  resetTrainingMetrics();
+  updateTrainingTaskUI();
+  setTrainingState('任务已切换。站立与行走使用不同观测和权重，点击“开始训练”创建对应环境。');
+  try {
+    const checkpoint = await app.trainer.loadCheckpoint(ui.trainingTask.value);
+    ui.checkpointNote.textContent = checkpoint
+      ? '检测到该任务的本地检查点；在“初始权重”中选择“继续本地检查点”即可恢复。'
+      : '该任务还没有本地检查点。训练后可手动保存。';
+  } catch (error) {
+    ui.checkpointNote.textContent = `无法读取本地检查点：${error.message}`;
+  }
+});
+ui.trainingInit.addEventListener('change', () => {
+  if (app.trainingReady) {
+    app.trainer?.pause();
+    app.trainer?.dispose();
+    app.trainingReady = false;
+    resetTrainingMetrics();
+    setTrainingState('初始权重方式已改变；点击“开始训练”重新创建环境。');
+  }
+});
+ui.trainingTest.addEventListener('click', testTrainingPolicy);
+ui.trainingExport.addEventListener('click', downloadTrainingPolicy);
+ui.trainingSave.addEventListener('click', saveTrainingCheckpoint);
+
 ui.kpScale.addEventListener('input', () => {
   applyKpScale(parseFloat(ui.kpScale.value));
 });
@@ -866,6 +1227,13 @@ async function boot() {
   resize();
   buildPolicyVectorUI();
   resetPolicyMetrics();
+  app.trainer = new TrainingClient({
+    onMetrics: handleTrainingMetrics,
+    onStatus: () => updateTrainingButtons(),
+    onError: (error) => setTrainingState(`训练错误：${error.message}`, 'error'),
+  });
+  updateTrainingTaskUI();
+  resetTrainingMetrics();
   requestAnimationFrame(frame);
 
   setLoading('启动 MuJoCo 引擎…', 0.05);

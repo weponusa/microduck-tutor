@@ -136,18 +136,18 @@
       <h1>让一只开源鸭子，<br>在你的浏览器里<em>学会站起来</em>。</h1>
       <p class="lede">
         这是一个从零开始的强化学习课程。不背公式，不看代码：
-        先认识这台叫 MicroDuck 的小机器人，再在格子世界里看着它试错，最后看着它在 3D 里被真正的策略撑起来。
-        无需安装，模型、物理和策略都在浏览器里运行。
+        先认识这台叫 MicroDuck 的小机器人，再在格子世界里看着它试错，最后亲手训练它在 3D 里站立。
+        无需安装，模型、物理、PPO 训练和策略都在浏览器里运行。
       </p>
       <div class="cta">
         <a class="btn primary" href="./rl-lab/course.html">开始八关课程</a>
-        <a class="btn" href="./simulator.html">直接玩 3D 鸭子</a>
+        <a class="btn" href="./simulator.html">进入真实训练室</a>
       </div>
       <div class="hero-meta">
         <span>零件 <b>70</b></span>
         <span>关节 <b>14</b></span>
         <span>重量 <b>0.74 kg</b></span>
-        <span>训练 <b>3 分钟</b></span>
+        <span>训练 <b>浏览器内 PPO</b></span>
         <span>无需安装 <b>浏览器运行</b></span>
       </div>
     </div>
@@ -159,19 +159,19 @@
 
   <section>
     <h2>这里有什么</h2>
-    <p class="sub">一条完整的路径：先看结构，再玩原理，最后看它在真物理里站起来。</p>
+    <p class="sub">一条完整的路径：先看结构，再玩原理，最后亲手训练并测试策略。</p>
     <div class="grid3">
       <a class="card" href="./rl-lab/course.html">
         <span class="k">主课</span>
         <h3>八关互动课程</h3>
-        <p>认识结构 → 人机赛跑 → 撑爆表格 → 奖励漏洞 → 找拐点 → 押注 → 拆开看网络 → 真鸭子站立。每关都有任务和通关判定。</p>
+        <p>认识结构 → 人机赛跑 → 撑爆表格 → 奖励漏洞 → 找拐点 → 押注 → 亲手算网络 → 真鸭子站立。每关都有任务和通关判定。</p>
         <span class="foot">course.html · 约 15 分钟</span>
       </a>
       <a class="card" href="./simulator.html">
-        <span class="k">模拟器</span>
-        <h3>3D 物理沙盒</h3>
-        <p>既能手动调 14 个关节，也能让真实 PPO 策略接管；推它、单步执行，同时观察 36 维输入、14 维动作和奖励。</p>
-        <span class="foot">真实物理 + 可调试策略</span>
+        <span class="k">训练与模拟</span>
+        <h3>真实训练室 + 3D 沙盒</h3>
+        <p>在独立物理环境里真正更新 actor / critic，看回报与损失；再测试当前策略、导出 JSON 或保存检查点。站立和行走实验分开训练。</p>
+        <span class="foot">真实 PPO 更新 · 训练与测试分离</span>
       </a>
       <a class="card" href="./rl-lab/course.html#review">
         <span class="k">课内读本</span>
@@ -224,9 +224,9 @@
       </div>
       <div class="pipe">
         <div class="no">STEP 04</div>
-        <h4>搬到网页</h4>
-        <p>把训练好的策略权重导成 JSON，用 MuJoCo 的 WebAssembly 版在浏览器里跑真物理、真策略。</p>
-        <div class="res">duck_policy.json · course.html</div>
+        <h4>搬进网页继续练</h4>
+        <p>既能运行预训练策略，也能在浏览器里进行真实 PPO 更新、保存检查点，再把当前 actor 放回物理沙盒测试。</p>
+        <div class="res">rlWorker.js · simulator.html</div>
       </div>
     </div>
   </section>

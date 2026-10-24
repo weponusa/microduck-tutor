@@ -198,7 +198,7 @@
   .outrow { grid-template-columns: 66px 1fr 42px; }
 
   .heatrow { display: grid; grid-template-columns: repeat(16, 1fr); gap: 3px; margin-top: 6px; }
-  .heatrow .cell { aspect-ratio: 1; border: 1px solid var(--line); border-radius: 3px; background: #fff; cursor: pointer; }
+  .heatrow .cell { aspect-ratio: 1; padding: 0; border: 1px solid var(--line); border-radius: 3px; background: #fff; cursor: pointer; }
   .heatrow .cell:hover { border-color: var(--accent); }
   .specgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; }
   .spec { border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; background: #fbfcfd; }
@@ -368,6 +368,82 @@
   .reader-quiz-link { margin: 18px 0; padding: 16px; border: 1px solid var(--accent-line); border-radius: 10px; background: var(--accent-soft); }
   .reader-quiz-link a { color: #8a5a10; font-weight: 650; }
 
+  /* 第七关：一次只讲一个动作 */
+  .lesson-flow { display: grid; gap: 14px; min-width: 0; }
+  .lesson-step { min-width: 0; scroll-margin-top: 16px; }
+  .lesson-step.locked { display: none; }
+  .lesson-step.current { border-color: var(--accent-line); box-shadow: 0 0 0 3px rgba(217,131,36,0.08); }
+  .lesson-step.done { border-color: #cfe9df; }
+  .lesson-heading { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 10px; }
+  .lesson-number { flex: none; width: 30px; height: 30px; display: grid; place-items: center;
+    border-radius: 9px; background: var(--accent-soft); color: var(--accent); font-family: var(--mono); font-weight: 700; }
+  .lesson-step.done .lesson-number { background: var(--good-soft); color: var(--good); }
+  .lesson-heading h2 { margin: 0 0 3px; font-size: 17px; line-height: 1.35; }
+  .lesson-heading p { margin: 0; font-size: 12.5px; }
+  .lesson-state { flex: none; margin-left: auto; padding: 4px 8px; border-radius: 999px;
+    background: #f4f6f8; color: var(--ink-faint); font-size: 11px; white-space: nowrap; }
+  .lesson-state.ok { background: var(--good-soft); color: var(--good); }
+  .plain-words { padding: 9px 11px; border-left: 3px solid var(--accent-line); border-radius: 0 8px 8px 0;
+    background: var(--accent-soft); font-size: 13px; line-height: 1.7; color: #6f4b17; }
+  .mini-neuron { display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap;
+    margin: 12px 0; padding: 12px; border: 1px solid var(--line-soft); border-radius: 10px; background: #fbfcfd; }
+  .mini-neuron .bubble { min-width: 76px; padding: 7px 9px; border: 1px solid var(--line); border-radius: 9px;
+    background: #fff; text-align: center; font-family: var(--mono); font-size: 12px; }
+  .mini-neuron .bubble small { display: block; margin-bottom: 2px; color: var(--ink-faint); font-family: -apple-system, sans-serif; font-size: 10px; }
+  .mini-neuron .arrow { color: var(--accent); font-size: 18px; }
+  .mini-neuron .sum { border-color: var(--accent-line); background: var(--accent-soft); color: #7a4f11; }
+  .calc-list { display: grid; gap: 9px; }
+  .calc-row { display: grid; grid-template-columns: minmax(175px, 1fr) minmax(105px, 0.65fr) minmax(190px, 1.2fr);
+    gap: 10px; align-items: center; padding: 10px; border: 1px solid var(--line); border-radius: 10px; }
+  .calc-row.ok { border-color: #b8ddcf; background: var(--good-soft); }
+  .calc-row.bad { border-color: #f3d3cd; background: var(--bad-soft); }
+  .calc-expression { font-family: var(--mono); font-size: 13px; line-height: 1.65; overflow-wrap: anywhere; }
+  .calc-expression small { display: block; color: var(--ink-faint); font-family: -apple-system, sans-serif; font-size: 11px; }
+  .answer-input { width: 100%; min-width: 0; padding: 8px 9px; border: 1px solid var(--line); border-radius: 8px;
+    background: #fff; color: var(--ink); font: 14px var(--mono); }
+  .answer-input:focus { outline: 2px solid rgba(217,131,36,0.22); border-color: var(--accent); }
+  .answer-input[aria-invalid="true"] { border-color: var(--bad); }
+  .answer-input[aria-invalid="false"] { border-color: var(--good); }
+  .answer-choices { display: flex; gap: 5px; flex-wrap: wrap; }
+  .answer-choices button { padding: 5px 9px; font-family: var(--mono); font-size: 11.5px; }
+  .answer-choices button.picked { border-color: var(--accent); background: var(--accent-soft); }
+  .answer-feedback { grid-column: 1 / -1; min-height: 17px; color: var(--ink-faint); font-size: 11.5px; line-height: 1.45; }
+  .calc-row.ok .answer-feedback { color: var(--good); }
+  .calc-row.bad .answer-feedback { color: var(--bad); }
+  .tanh-lab { display: grid; grid-template-columns: minmax(0, 1fr) minmax(260px, 0.9fr); gap: 14px; align-items: center; }
+  .tanh-readout { display: grid; grid-template-columns: 1fr auto 1fr; gap: 9px; align-items: center; margin: 10px 0; }
+  .tanh-number { padding: 10px 6px; border: 1px solid var(--line); border-radius: 9px; text-align: center;
+    background: #fbfcfd; font: 20px var(--mono); overflow-wrap: anywhere; }
+  .tanh-number small { display: block; margin-bottom: 3px; color: var(--ink-faint); font: 10px -apple-system, sans-serif; }
+  .tanh-number.out { border-color: var(--accent-line); background: var(--accent-soft); color: var(--accent); }
+  .tanh-presets { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 8px; }
+  .tanh-presets button { padding: 7px 4px; font-family: var(--mono); }
+  .tanh-presets button.seen { border-color: #b8ddcf; background: var(--good-soft); color: var(--good); }
+  #tanhCurve { display: block; width: 100%; height: auto; min-height: 170px; }
+  .matrix-recipes { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 10px 0; }
+  .matrix-recipe { padding: 9px 10px; border: 1px solid var(--line); border-radius: 9px; background: #fbfcfd;
+    font-family: var(--mono); font-size: 12px; line-height: 1.7; overflow-wrap: anywhere; }
+  .matrix-recipe b { color: var(--accent); }
+  .network-scroll { max-width: 100%; overflow-x: auto; margin: 10px 0 4px; }
+  #networkMap { display: block; width: 100%; min-width: 520px; height: auto; }
+  .matrix-answer { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; margin-top: 10px; }
+  .matrix-answer .answer-input { width: 100px; flex: none; }
+  details.net-details { margin-top: 12px; border: 1px solid var(--line); border-radius: 10px; background: #fbfcfd; }
+  details.net-details summary { padding: 10px 12px; cursor: pointer; color: var(--ink-soft); font-size: 12.5px; font-weight: 600; }
+  details.net-details .details-body { padding: 0 12px 12px; }
+  .weight-scroller { max-width: 100%; overflow: auto; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+  .weight-scroller .heatrow { min-width: 420px; padding: 9px; }
+  .weight-scroller .heatrow.weights { grid-template-columns: repeat(36, 14px); min-width: 640px; }
+  .real-demo { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+  .real-demo .card { min-width: 0; }
+  .real-demo .obslist { grid-template-columns: 1fr; }
+  .real-demo .obsrow { grid-template-columns: 54px minmax(70px, 1fr) 42px minmax(45px, 0.8fr); font-size: 11px; padding: 3px 0; }
+  .real-demo .obsrow .g { font-size: 10px; }
+  .demo-output { display: grid; grid-template-columns: minmax(0, 1fr) minmax(150px, 0.9fr); gap: 8px; align-items: start; }
+  .demo-status { margin: 9px 0; color: var(--ink-faint); font-size: 12px; line-height: 1.55; }
+  .demo-status.ok { color: var(--good); }
+  .demo-status.bad { color: var(--bad); }
+
   @media (max-width: 900px) {
     .split { grid-template-columns: 1fr; }
     .three { grid-template-columns: 1fr; }
@@ -375,8 +451,22 @@
     #stageWrap { height: calc(100vh - 300px); }
     .reader-body { padding: 6px 20px 60px; }
     .reader-body .cols2 { grid-template-columns: 1fr; }
+    .tanh-lab, .real-demo { grid-template-columns: 1fr; }
+    .real-demo .obslist { grid-template-columns: 1fr 1fr; }
   }
   @media (max-width: 600px) {
+    .bar { flex-wrap: wrap; gap: 8px 12px; padding: 9px 12px; }
+    .bar .name span { display: none; }
+    .steps { order: 3; width: 100%; justify-content: center; }
+    .calc-row { grid-template-columns: 1fr; gap: 7px; }
+    .answer-feedback { grid-column: 1; }
+    .lesson-heading { flex-wrap: wrap; }
+    .lesson-state { margin-left: 40px; margin-top: -5px; }
+    .tanh-lab { grid-template-columns: 1fr; }
+    .matrix-recipes { grid-template-columns: 1fr; }
+    .demo-output { grid-template-columns: 1fr; }
+    .real-demo .obslist { grid-template-columns: 1fr; }
+    #duckNet { height: 180px !important; }
     .footbar { padding: 9px 12px; gap: 7px; }
     .foot-center { gap: 6px; }
     .footbar .where { font-size: 10.5px; }
@@ -758,63 +848,157 @@
     <div class="inner">
       <div class="mission" id="m7">
         <span class="tag">任务</span>
-        拖左边的滑块，看中间的网络怎么亮、右边鸭子怎么动；再点一个格子看它怎么算的
-        <span class="state" id="m7state">0 / 2</span>
+        不用先懂数学：按顺序做完「算一笔 → 压一下 → 排成网络 → 跑真策略」四步
+        <span class="state" id="m7state">第 1 / 4 步 · 0 完成</span>
       </div>
-      <h1>第七关 · 拆开看它怎么算的</h1>
-      <p class="sub">它的策略就是一个 36 → 64 → 64 → 14 的算式，全部存在 157 KB 的权重文件里。下面跑的就是那个真文件。</p>
+      <h1>第七关 · 亲手算一遍神经网络</h1>
+      <p class="sub">先只算 2 个数。你会看到：所谓神经网络，不过是把同一笔小计算重复很多遍。</p>
 
-      <div class="split" style="grid-template-columns: 1fr 1fr;">
-        <div class="card">
-          <h4>输入：36 个数（就是它此刻看到的东西）</h4>
-          <p class="hint">拖滑块改它，右边立刻跟着变。这就是它在每 0.02 秒里看到的全部信息。</p>
-          <div id="obsList" class="obslist"></div>
-          <div class="slider-row" style="margin-top:8px;">
-            <label for="tiltX">躯干前倾</label>
-            <input id="tiltX" type="range" min="0" max="60" step="1" value="0">
-            <output id="tiltXv">0°</output>
+      <div class="lesson-flow">
+        <section class="card lesson-step current" id="lessonStep1">
+          <div class="lesson-heading">
+            <span class="lesson-number">1</span>
+            <div><h2>先算一笔：乘一乘，再加起来</h2><p>一个神经元只做这件事。先不用管“权重”“偏置”这些名字。</p></div>
+            <span class="lesson-state" id="lessonState1">待完成</span>
           </div>
-          <div class="slider-row">
-            <label for="kneeL">左膝角度</label>
-            <input id="kneeL" type="range" min="-90" max="90" step="1" value="0">
-            <output id="kneeLv">0°</output>
+          <div class="plain-words">把 <strong>x 想成输入</strong>（传感器读到的数），<strong>w 想成重要程度</strong>，<strong>b 是最后额外加的数</strong>。请完成下面 3 个空：可以点答案，也可以直接输入。</div>
+          <div class="mini-neuron" aria-label="两个输入经过一个神经元">
+            <span class="bubble"><small>输入 1</small>x₁ = 2</span>
+            <span class="bubble"><small>输入 2</small>x₂ = 1</span>
+            <span class="arrow">→</span>
+            <span class="bubble sum"><small>这一笔叫加权求和</small>x₁×w₁ + x₂×w₂ + b</span>
           </div>
-          <div class="slider-row">
-            <label for="hgt">离地高度</label>
-            <input id="hgt" type="range" min="6" max="14" step="0.1" value="12">
-            <output id="hgtv">12 cm</output>
+          <div class="calc-list">
+            <div class="calc-row" id="calcRow1">
+              <div class="calc-expression"><small>第 1 小步：输入 1 × 重要程度 1</small>2 × 0.5 = ?</div>
+              <input class="answer-input" id="calcAnswer1" type="number" inputmode="decimal" step="any" aria-label="2 乘 0.5 的答案" placeholder="填答案">
+              <div class="answer-choices" aria-label="第一题备选答案"><button data-calc="1" data-value="0.5">0.5</button><button data-calc="1" data-value="1">1</button><button data-calc="1" data-value="2">2</button></div>
+              <div class="answer-feedback" id="calcFeedback1" aria-live="polite">先只算乘法：2 的一半是多少？</div>
+            </div>
+            <div class="calc-row" id="calcRow2">
+              <div class="calc-expression"><small>第 2 小步：输入 2 × 重要程度 2</small>1 × (−1) = ?</div>
+              <input class="answer-input" id="calcAnswer2" type="number" inputmode="decimal" step="any" aria-label="1 乘负 1 的答案" placeholder="填答案">
+              <div class="answer-choices" aria-label="第二题备选答案"><button data-calc="2" data-value="-1">−1</button><button data-calc="2" data-value="0">0</button><button data-calc="2" data-value="1">1</button></div>
+              <div class="answer-feedback" id="calcFeedback2" aria-live="polite">任何数乘 1 都不变，负号也保留。</div>
+            </div>
+            <div class="calc-row" id="calcRow3">
+              <div class="calc-expression"><small>第 3 小步：前两笔 + 额外加的 b（b = 0.5）</small>1 + (−1) + 0.5 = ?</div>
+              <input class="answer-input" id="calcAnswer3" type="number" inputmode="decimal" step="any" aria-label="加权求和的最终答案" placeholder="填答案">
+              <div class="answer-choices" aria-label="第三题备选答案"><button data-calc="3" data-value="-0.5">−0.5</button><button data-calc="3" data-value="0.5">0.5</button><button data-calc="3" data-value="1.5">1.5</button></div>
+              <div class="answer-feedback" id="calcFeedback3" aria-live="polite">从左往右加：1 − 1 = 0，再加 0.5。</div>
+            </div>
           </div>
-        </div>
+          <div class="note" id="sumNote">算完后你会得到 <strong>z = 0.5</strong>。这就是整个网络里反复发生的一笔计算。</div>
+          <div class="btnrow" style="margin-top:10px;"><button class="primary" id="toLesson2" disabled>算对了，下一步：认识 tanh →</button></div>
+        </section>
 
-        <div class="card">
-          <h4>输出：14 个关节的目标角偏移</h4>
-          <p class="hint">网络每 0.02 秒算出这 14 个数，鸭子就照着动。</p>
-          <div style="display:grid; grid-template-columns: minmax(0,1fr) minmax(0,1.15fr); gap:12px; align-items:start;">
-            <div id="outList" class="outlist"></div>
-            <canvas id="duckNet" class="duckstage" style="height:206px;"></canvas>
+        <section class="card lesson-step locked" id="lessonStep2">
+          <div class="lesson-heading">
+            <span class="lesson-number">2</span>
+            <div><h2>再压一下：tanh 是一个“软夹子”</h2><p>刚才的 z 可能很大，tanh 把它变成 −1 到 1 之间的 y。</p></div>
+            <span class="lesson-state" id="lessonState2">试一试 −4、0、4</span>
           </div>
-        </div>
-      </div>
+          <div class="plain-words"><strong>为什么要压？</strong>每个神经元都把结果控制在同一范围，下一层才好接着算。它不是把大数硬剪掉，而是越接近 ±1，压得越平缓。</div>
+          <div class="tanh-lab">
+            <div>
+              <div class="tanh-readout">
+                <div class="tanh-number"><small>随便多大的 z</small><span id="tanhInputValue">0.5</span></div>
+                <span>→ tanh →</span>
+                <div class="tanh-number out"><small>一定在 −1～1 的 y</small><span id="tanhOutputValue">0.462</span></div>
+              </div>
+              <div class="slider-row">
+                <label for="tanhSlider">改变 z</label>
+                <input id="tanhSlider" type="range" min="-4" max="4" step="0.5" value="0.5">
+                <output id="tanhSliderV">0.5</output>
+              </div>
+              <p class="hint">依次点这三个数，看“负数、中间、很大的正数”分别变成什么：</p>
+              <div class="tanh-presets"><button data-tanh="-4">z = −4</button><button data-tanh="0">z = 0</button><button data-tanh="4">z = 4</button></div>
+              <div class="note" id="tanhNote">从 −4 开始：输入是 −4，输出却只会接近 −1，不会变成 −4。</div>
+            </div>
+            <svg id="tanhCurve" viewBox="0 0 360 230" role="img" aria-label="tanh 曲线：输入越大，输出越接近 1；输入越小，输出越接近负 1">
+              <path d="M45 25V195H340" fill="none" stroke="#c8d0d9" stroke-width="1.2"/>
+              <path d="M45 195H340M45 110H340M45 25H340" fill="none" stroke="#eef1f5"/>
+              <g fill="#8894a1" font-size="11" font-family="-apple-system, sans-serif"><text x="20" y="30">1</text><text x="20" y="114">0</text><text x="13" y="199">−1</text><text x="38" y="215">−4</text><text x="187" y="215">0</text><text x="328" y="215">4</text><text x="48" y="15">输出 y</text><text x="290" y="228">输入 z</text></g>
+              <path id="tanhPath" fill="none" stroke="#d98324" stroke-width="3"/>
+              <line id="tanhGuide" x1="45" x2="45" y1="25" y2="195" stroke="#f0d2a8" stroke-dasharray="3 3"/>
+              <circle id="tanhDot" cx="45" cy="110" r="6" fill="#fff" stroke="#d98324" stroke-width="3"/>
+            </svg>
+          </div>
+          <div class="btnrow" style="margin-top:10px;"><button class="primary" id="toLesson3" disabled>看懂了，下一步：排成网络 →</button></div>
+        </section>
 
-      <div class="split" style="grid-template-columns: 1fr 1fr; margin-top:14px;">
-        <div class="card">
-          <h4>中间那一层在干什么</h4>
-          <p class="hint">64 个小格就是 64 个「特征」，越亮越敏感。<b>点一个格子</b>，看它怎么算出来的。</p>
-          <div class="heatrow" id="heat1"></div>
-          <div class="note" id="mathNote">
-            还没选。点亮一个格子，它那一行就是「64 个权重 × 36 个输入，加起来再过一次 tanh」。
+        <section class="card lesson-step locked" id="lessonStep3">
+          <div class="lesson-heading">
+            <span class="lesson-number">3</span>
+            <div><h2>把同样的小计算排起来，就是网络</h2><p>“矩阵”不是另一种魔法，只是把很多权重整齐排成一张表。</p></div>
+            <span class="lesson-state" id="lessonState3">还有 1 个小问题</span>
           </div>
-        </div>
-        <div class="card">
-          <h4>梯度是什么（它怎么学会改权重）</h4>
-          <p class="hint">分数是一座山的坡度，训练让小球往山下滚。点「更新一次」。</p>
-          <canvas id="gradCanvas" style="display:block;width:100%;height:110px;"></canvas>
-          <div class="btnrow" style="margin-top:8px;">
-            <button class="primary" id="btnGrad">更新一次</button>
-            <button id="btnGradMany">连按 30 次</button>
-            <span style="font-size:11px;color:var(--ink-faint);" id="gradState">参数 θ = 0.00</span>
+          <div class="plain-words">同一个输入可以交给第二个神经元，<strong>换一排 w 和 b，就得到另一个结果</strong>。两个神经元并排，就是下面两笔你已经会算的题。</div>
+          <div class="matrix-recipes">
+            <div class="matrix-recipe"><b>神经元 A</b><br>z = 2×0.5 + 1×(−1) + 0.5 = 0.5<br>y = tanh(0.5) ≈ 0.462</div>
+            <div class="matrix-recipe"><b>神经元 B</b>（只换了 w 和 b）<br>z = 2×0.25 + 1×1 + 0 = 1.5<br>y = tanh(1.5) ≈ 0.905</div>
           </div>
-        </div>
+          <p>把 36 个输入、64 个神经元按同样方法排起来，再把结果交给下一层，就得到真鸭子的 <strong>36 → 64 → 64 → 14</strong>。两层橙色圆仍是一笔“乘、加、tanh”；最后绿色圆把上一层结果乘加后交给 14 个关节。为了避免线条糊成一团，<strong>只画几条代表连接</strong>。</p>
+          <div class="network-scroll">
+            <svg id="networkMap" viewBox="0 0 760 260" role="img" aria-label="真实策略网络：36 个输入，两层各 64 个神经元，最后 14 个动作，只展示代表连接">
+              <g stroke="#d9e0e7" stroke-width="1.5" fill="none"><path d="M100 70L285 70M100 70L285 130M100 130L285 70M100 190L285 190M285 70L485 130M285 130L485 70M485 70L660 70M485 130L660 130M485 190L660 190"/></g>
+              <g fill="#fff" stroke="#d98324" stroke-width="2"><circle cx="80" cy="70" r="17"/><circle cx="80" cy="130" r="17"/><circle cx="80" cy="190" r="17"/></g>
+              <g fill="#fdf4e8" stroke="#d98324" stroke-width="2"><circle cx="305" cy="70" r="17"/><circle cx="305" cy="130" r="17"/><circle cx="305" cy="190" r="17"/><circle cx="505" cy="70" r="17"/><circle cx="505" cy="130" r="17"/><circle cx="505" cy="190" r="17"/></g>
+              <g fill="#eaf5f0" stroke="#1f7a60" stroke-width="2"><circle cx="680" cy="70" r="17"/><circle cx="680" cy="130" r="17"/><circle cx="680" cy="190" r="17"/></g>
+              <g fill="#8894a1" font-size="17" font-family="var(--mono)"><text x="72" y="105">⋮</text><text x="297" y="105">⋮</text><text x="297" y="165">⋮</text><text x="497" y="105">⋮</text><text x="497" y="165">⋮</text><text x="672" y="105">⋮</text><text x="672" y="165">⋮</text></g>
+              <g fill="#18222d" font-size="14" text-anchor="middle" font-family="-apple-system, sans-serif"><text x="80" y="240">36 个输入</text><text x="305" y="240">64 个神经元</text><text x="505" y="240">再算 64 个</text><text x="680" y="240">14 个关节动作</text></g>
+              <g fill="#8894a1" font-size="11" text-anchor="middle" font-family="-apple-system, sans-serif"><text x="80" y="30">此刻看到的数</text><text x="305" y="30">每个都重复同一笔计算</text><text x="505" y="30">继续组合上一层结果</text><text x="680" y="30">左膝、右膝、脚踝……</text></g>
+            </svg>
+          </div>
+          <div class="note"><strong>只数第一层：</strong>36 个输入中的每一个，都要连到 64 个神经元中的每一个。也就是 64 行、每行 36 个 w。</div>
+          <div class="matrix-answer">
+            <label for="matrixAnswer">所以第一层有多少个 w（权重）？ 64 × 36 =</label>
+            <input class="answer-input" id="matrixAnswer" type="number" inputmode="numeric" placeholder="填个数" aria-label="第一层权重数量">
+            <span class="answer-feedback" id="matrixFeedback" aria-live="polite">就是 64 个 36 相加。</span>
+          </div>
+          <div class="btnrow" style="margin-top:10px;"><button class="primary" id="toLesson4" disabled>答对了，最后跑真策略 →</button></div>
+          <details class="net-details" id="netDetails">
+            <summary>可选：展开真实热力图和权重（不看也能通关）</summary>
+            <div class="details-body">
+              <p class="hint">颜色只表示大小：橙色为正、蓝色为负，越深绝对值越大。第一层热力图是 64 个神经元的 tanh 输出；权重图每一行对应一个神经元的 36 个 w。</p>
+              <h4>第一层 64 个输出</h4>
+              <div class="weight-scroller"><div class="heatrow" id="heat1"></div></div>
+              <h4 style="margin-top:10px;">第 <span id="weightNeuron">0</span> 个神经元的 36 个真实权重</h4>
+              <div class="weight-scroller"><div class="heatrow weights" id="weightHeat"></div></div>
+              <p class="hint">点上面的任意一个输出格，可以切换查看它的权重。这里展示的是真实 duck_policy.json，不是示意图。</p>
+              <div class="note" id="mathNote">展开后正在读取真实权重……</div>
+            </div>
+          </details>
+        </section>
+
+        <section class="card lesson-step locked" id="lessonStep4">
+          <div class="lesson-heading">
+            <span class="lesson-number">4</span>
+            <div><h2>最后：让真实的 36 → 64 → 64 → 14 跑一遍</h2><p>这次不手算了。改 3 个输入，观察真实文件算出的 14 个动作。</p></div>
+            <span class="lesson-state" id="lessonState4">还没运行</span>
+          </div>
+          <div class="plain-words"><strong>你刚才学会的就是它的全部基本动作。</strong>点“运行一次”后，浏览器读取真实 duck_policy.json，重复你算过的乘法和加法，最后让鸭子按输出摆姿势。</div>
+          <div class="real-demo" style="margin-top:12px;">
+            <div class="card">
+              <h4>你来改 3 个输入</h4>
+              <p class="hint">其余 33 个先保持站立初值，不让无关数字干扰你。</p>
+              <div class="slider-row"><label for="tiltX">躯干前倾</label><input id="tiltX" type="range" min="0" max="60" step="1" value="0"><output id="tiltXv">0°</output></div>
+              <div class="slider-row"><label for="kneeL">左膝角度</label><input id="kneeL" type="range" min="-90" max="90" step="1" value="0"><output id="kneeLv">0°</output></div>
+              <div class="slider-row"><label for="hgt">离地高度</label><input id="hgt" type="range" min="6" max="14" step="0.1" value="12"><output id="hgtv">12 cm</output></div>
+              <div class="btnrow"><button class="primary" id="btnRunNet">用真权重运行一次</button></div>
+              <div class="demo-status" id="netStatus" aria-live="polite">准备就绪后会在这里显示结果。</div>
+              <details class="net-details">
+                <summary>可选：查看当前 36 个输入</summary>
+                <div class="details-body"><div id="obsList" class="obslist"></div></div>
+              </details>
+            </div>
+            <div class="card">
+              <h4>它算出 14 个动作</h4>
+              <p class="hint">条形长短表示动作大小，正负表示不同方向。这里只是前向演示，不是物理仿真。</p>
+              <div class="demo-output"><div id="outList" class="outlist"></div><canvas id="duckNet" class="duckstage" style="height:206px;"></canvas></div>
+            </div>
+          </div>
+        </section>
       </div>
     </div>
   </section>
@@ -958,11 +1142,7 @@ function go(n) {
   if (cur === 3) ensureView('duck2', { dist: 0.50, azim: 0.95, elev: 0.20, targetZ: 0.085 });
   if (cur === 4) ensureView('duck3', { dist: 0.54, azim: 0.95, elev: 0.24, targetZ: 0.095 });
   if (cur === 5) { ensureView('duck4', { dist: 0.42, azim: 0.95, elev: 0.20, targetZ: 0.08 }); if (H4) { drawChart4(); updateK4(); } }
-  if (cur === 7) {
-    ensureView('duckNet', { dist: 0.56, azim: 0.95, elev: 0.22, targetZ: 0.10 });
-    renderNet();
-    drawGrad();
-  }
+  if (cur === 7) drawTanhCurve();
   if (cur === 6) {
     ensureView('duck5a', { dist: 0.40, azim: 0.95, elev: 0.18, targetZ: 0.075 });
     ensureView('duck5b', { dist: 0.40, azim: 0.95, elev: 0.18, targetZ: 0.075 });
@@ -1382,6 +1562,8 @@ document.querySelectorAll('.dpad button').forEach((b) => {
   b.onclick = () => { if (cur === 2) youMove(Number(b.dataset.dir)); };
 });
 document.addEventListener('keydown', (e) => {
+  if (!reader.hidden) return;
+  if (e.target.closest('input, textarea, select, [contenteditable="true"]')) return;
   if (cur !== 2) {
     if (e.key === 'ArrowRight') go(cur + 1);
     if (e.key === 'ArrowLeft') go(cur - 1);
@@ -2642,7 +2824,6 @@ initAnatomy3D().catch((e) => console.error('3D 载入失败', e));
   if (cv3 && cv3.offsetParent && cur === 4) renderS3(t);
   if (cur === 5) renderS4(t);
   if (cur === 6) renderS5();
-  if (cur === 7) { renderNet(); drawGrad(); }
 }
 requestAnimationFrame(duckLoop);
 initAnatomy3D().catch((e) => console.error('3D 载入失败', e));
@@ -2681,7 +2862,11 @@ const ACT_BODY = [
 ];
 
 async function loadNet() {
-  if (!NET) NET = await (await fetch('./runs/duck_policy.json')).json();
+  if (!NET) {
+    const res = await fetch('./runs/duck_policy.json');
+    if (!res.ok) throw new Error(`策略载入失败：${res.status}`);
+    NET = await res.json();
+  }
   return NET;
 }
 
@@ -2731,13 +2916,13 @@ function renderObsList(obs) {
     box.innerHTML = obs.map((_, i) => {
       const g = i < 4 ? '姿态' : i < 7 ? '转速' : i < 21 ? '关节角' : i < 35 ? '关节速度' : '高度';
       return `<div class="obsrow"><span class="g">${g}</span><span class="n">${OBS_NAMES[i]}</span>
-        <span class="v" id="ov${i}">0.00</span><span class="bar"><i id="ob${i}"></i></span></div>`;
+        <span class="v" id="obsValue${i}">0.00</span><span class="bar"><i id="obsBar${i}"></i></span></div>`;
     }).join('');
   }
   for (let i = 0; i < 36; i++) {
-    document.getElementById('ov' + i).textContent = obs[i].toFixed(2);
+    document.getElementById('obsValue' + i).textContent = obs[i].toFixed(2);
     const pct = Math.min(100, Math.abs(obs[i]) * 100);
-    const el = document.getElementById('ob' + i);
+    const el = document.getElementById('obsBar' + i);
     el.style.width = pct + '%';
     el.style.background = obs[i] >= 0 ? '#d98324' : '#4a7ba6';
   }
@@ -2748,138 +2933,284 @@ function renderOutList(acts) {
   if (!box.dataset.built) {
     box.dataset.built = '1';
     box.innerHTML = Array.from(acts).map((_, i) => `<div class="outrow"><span class="n">${ACT_NAMES[i]}</span>
-      <span class="bar"><i id="oa${i}"></i></span><span class="v" id="ov2${i}">0.00</span></div>`).join('');
+      <span class="bar"><i id="actionBar${i}"></i></span><span class="v" id="actionValue${i}">0.00</span></div>`).join('');
   }
   for (let i = 0; i < 14; i++) {
     const a = acts[i];
     const pct = Math.min(100, Math.abs(a) * 100);
-    const el = document.getElementById('oa' + i);
+    const el = document.getElementById('actionBar' + i);
     el.style.width = pct + '%';
     el.style.background = a >= 0 ? '#d98324' : '#4a7ba6';
-    document.getElementById('ov2' + i).textContent = a.toFixed(2);
+    document.getElementById('actionValue' + i).textContent = a.toFixed(2);
   }
 }
 
 /* ── 鸭子跟着输出动 ── */
-function driveDuckNet(acts) {
-  const v = viewPromises['duckNet'];
-  if (!v) return;
-  v.then((view) => {
-    if (!view) return;
-    for (let i = 0; i < 14; i++) view.joint(ACT_BODY[i], acts[i] * 0.35);
-    view.render();
-  });
+async function driveDuckNet(acts) {
+  const view = await ensureView('duckNet', { dist: 0.56, azim: 0.95, elev: 0.22, targetZ: 0.10 });
+  if (!view) return;
+  for (let i = 0; i < 14; i++) view.joint(ACT_BODY[i], acts[i] * 0.35);
+  view.render();
 }
 
-/* ── 网络热力图（第一层 64 个隐藏单元） ── */
+/* ── 四步课的状态：完成状态会保留，真实前向只由用户触发 ── */
+const netState = {
+  unlocked: 1,
+  calc: [false, false, false], calcDone: false,
+  tanhSeen: new Set(), tanhDone: false,
+  matrixDone: false, ran: false,
+  selectedNeuron: 0, latestActs: null,
+};
+
+function netStepDone(i) {
+  return [netState.calcDone, netState.tanhDone, netState.matrixDone, netState.ran][i - 1];
+}
+
+function syncNetProgress() {
+  const done = [1, 2, 3, 4].map(netStepDone);
+  const count = done.filter(Boolean).length;
+  const labels = [
+    netState.calcDone ? '已完成' : '待完成',
+    netState.tanhDone ? '已完成' : `已试 ${netState.tanhSeen.size} / 3`,
+    netState.matrixDone ? '已完成' : '还有 1 个小问题',
+    netState.ran ? '已运行' : '还没运行',
+  ];
+  for (let i = 1; i <= 4; i++) {
+    const card = document.getElementById('lessonStep' + i);
+    card.classList.toggle('locked', i > netState.unlocked);
+    card.classList.toggle('done', done[i - 1]);
+    card.classList.toggle('current', i === netState.unlocked && !done[i - 1]);
+    const state = document.getElementById('lessonState' + i);
+    state.textContent = labels[i - 1];
+    state.classList.toggle('ok', done[i - 1]);
+  }
+  document.getElementById('toLesson2').disabled = !netState.calcDone;
+  document.getElementById('toLesson3').disabled = !netState.tanhDone;
+  document.getElementById('toLesson4').disabled = !netState.matrixDone;
+  if (count === 4) mark('s7');
+  document.getElementById('m7state').textContent = passed.has('s7') ? '已通关' : `第 ${netState.unlocked} / 4 步 · ${count} 完成`;
+}
+
+function unlockLesson(n) {
+  netState.unlocked = Math.max(netState.unlocked, n);
+  syncNetProgress();
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  document.getElementById('lessonStep' + n).scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
+}
+
+/* ── 第一步：三个空逐项即时校验 ── */
+const CALC_EXPECTED = [1, -1, 0.5];
+const CALC_HINTS = [
+  '先只算乘法：2 的一半是多少？',
+  '任何数乘 1 都不变，负号也保留。',
+  '从左往右加：1 − 1 = 0，再加 0.5。',
+];
+
+function validateCalc(i) {
+  const input = document.getElementById('calcAnswer' + i);
+  const row = document.getElementById('calcRow' + i);
+  const feedback = document.getElementById('calcFeedback' + i);
+  const raw = input.value.trim();
+  const value = Number(raw);
+  const ok = raw !== '' && Number.isFinite(value) && Math.abs(value - CALC_EXPECTED[i - 1]) < 1e-9;
+  netState.calc[i - 1] = ok;
+  row.classList.toggle('ok', ok);
+  row.classList.toggle('bad', raw !== '' && !ok);
+  if (raw === '') input.removeAttribute('aria-invalid');
+  else input.setAttribute('aria-invalid', String(!ok));
+  feedback.textContent = ok
+    ? ['对了，2 × 0.5 = 1。', '对了，负号保留，所以是 −1。', '对了，1 − 1 + 0.5 = 0.5。这一整笔就算完了！'][i - 1]
+    : raw === '' ? CALC_HINTS[i - 1] : '还不对。慢一点，只看这一行的运算再试一次。';
+  document.querySelectorAll(`[data-calc="${i}"]`).forEach((b) => {
+    b.classList.toggle('picked', raw !== '' && Number(b.dataset.value) === value);
+  });
+  if (netState.calc.every(Boolean)) {
+    netState.calcDone = true;
+    const note = document.getElementById('sumNote');
+    note.className = 'note good';
+    note.innerHTML = '<strong>你算出了 z = 0.5。</strong>权重文件里保存的就是 w 和 b；输入 x 每次变化，就按同一方法重算。';
+  }
+  syncNetProgress();
+}
+
+document.querySelectorAll('[data-calc]').forEach((b) => {
+  b.addEventListener('click', () => {
+    document.getElementById('calcAnswer' + b.dataset.calc).value = b.dataset.value;
+    validateCalc(Number(b.dataset.calc));
+  });
+});
+for (let i = 1; i <= 3; i++) {
+  document.getElementById('calcAnswer' + i).addEventListener('input', () => validateCalc(i));
+}
+
+/* ── 第二步：一个神经元、一个滑杆，看 tanh 的软压缩 ── */
+function drawTanhCurve() {
+  let d = '';
+  for (let z = -4; z <= 4.001; z += 0.1) {
+    const x = 45 + ((z + 4) / 8) * 295;
+    const y = 110 - Math.tanh(z) * 85;
+    d += `${d ? 'L' : 'M'}${x.toFixed(1)} ${y.toFixed(1)}`;
+  }
+  document.getElementById('tanhPath').setAttribute('d', d);
+}
+
+function setTanh(z) {
+  z = Math.max(-4, Math.min(4, Number(z)));
+  const y = Math.tanh(z);
+  const slider = document.getElementById('tanhSlider');
+  slider.value = String(z);
+  document.getElementById('tanhInputValue').textContent = String(z);
+  document.getElementById('tanhSliderV').textContent = String(z);
+  document.getElementById('tanhOutputValue').textContent = y.toFixed(3);
+  const x = 45 + ((z + 4) / 8) * 295;
+  const py = 110 - y * 85;
+  const dot = document.getElementById('tanhDot');
+  dot.setAttribute('cx', String(x));
+  dot.setAttribute('cy', String(py));
+  const guide = document.getElementById('tanhGuide');
+  guide.setAttribute('x1', String(x)); guide.setAttribute('x2', String(x));
+  guide.setAttribute('y1', String(py)); guide.setAttribute('y2', '195');
+
+  if ([-4, 0, 4].includes(z)) netState.tanhSeen.add(String(z));
+  document.querySelectorAll('[data-tanh]').forEach((b) => {
+    b.classList.toggle('seen', netState.tanhSeen.has(b.dataset.tanh));
+  });
+  const note = document.getElementById('tanhNote');
+  note.className = 'note';
+  if (z === -4) note.innerHTML = `z = −4 很大（负方向），但 y = <strong>${y.toFixed(3)}</strong>：只是接近 −1，没有跑到 −4。`;
+  else if (z === 0) note.innerHTML = 'z = 0 时，y = <strong>0</strong>。中间不需要压，所以原样通过。';
+  else if (z === 4) note.innerHTML = `z = 4 很大，但 y = <strong>${y.toFixed(3)}</strong>：只是接近 1，永远不超过 1。`;
+  else note.innerHTML = `现在 z = ${z}，y = <strong>${y.toFixed(3)}</strong>。继续试 −4、0、4 三个位置。`;
+  if (netState.tanhSeen.size === 3) {
+    netState.tanhDone = true;
+    note.className = 'note good';
+    note.innerHTML = '<strong>三种都试过了：</strong>负数靠近 −1，0 还是 0，正数靠近 1。这就是“把数压到 −1～1”的意思。';
+  }
+  syncNetProgress();
+}
+
+document.getElementById('tanhSlider').addEventListener('input', (e) => setTanh(Number(e.target.value)));
+document.querySelectorAll('[data-tanh]').forEach((b) => b.addEventListener('click', () => setTanh(Number(b.dataset.tanh))));
+
+/* ── 第三步：只问一个数量，真实细节默认折叠 ── */
+document.getElementById('matrixAnswer').addEventListener('input', (e) => {
+  const raw = e.target.value.trim();
+  const value = Number(raw);
+  const feedback = document.getElementById('matrixFeedback');
+  const ok = raw !== '' && value === 2304;
+  if (raw === '') e.target.removeAttribute('aria-invalid');
+  else e.target.setAttribute('aria-invalid', String(!ok));
+  if (ok) {
+    netState.matrixDone = true;
+    feedback.textContent = '对，2304 个。每个都只是一个 w，没有新的魔法。';
+    feedback.style.color = 'var(--good)';
+  } else {
+    feedback.textContent = raw === '' ? '就是 64 个 36 相加。' : '还差一点：先算 60 × 36 = 2160，再加 4 × 36 = 144。';
+    feedback.style.color = raw === '' ? 'var(--ink-faint)' : 'var(--bad)';
+  }
+  syncNetProgress();
+});
+
+function heatColor(v, scale = 1) {
+  const a = 0.12 + Math.min(1, Math.abs(v) / scale) * 0.88;
+  return v >= 0 ? `rgba(217,131,36,${a})` : `rgba(74,123,166,${a})`;
+}
+
 function renderHeat(acts) {
   const box = document.getElementById('heat1');
   const h1 = acts[1];
   if (!box.dataset.built) {
     box.dataset.built = '1';
     box.innerHTML = Array.from({ length: 64 }, (_, i) =>
-      `<span class="cell" data-i="${i}" title="第 ${i} 个特征"></span>`).join('');
+      `<button type="button" class="cell" data-i="${i}" title="查看第 ${i} 个神经元的权重" aria-label="查看第 ${i} 个神经元"></button>`).join('');
     box.addEventListener('click', (e) => {
       const c = e.target.closest('.cell');
-      if (!c) return;
-      showMath(Number(c.dataset.i));
+      if (c) showMath(Number(c.dataset.i));
     });
   }
-  const cells = box.children;
   for (let i = 0; i < 64; i++) {
-    const v = h1[i];
-    const a = Math.abs(v);
-    const col = v >= 0 ? `rgba(217,131,36,${0.12 + a * 0.88})` : `rgba(74,123,166,${0.12 + a * 0.88})`;
-    cells[i].style.background = col;
-    cells[i].style.borderColor = a > 0.7 ? '#d98324' : 'var(--line)';
+    const cell = box.children[i];
+    cell.style.background = heatColor(h1[i]);
+    cell.style.borderColor = i === netState.selectedNeuron ? '#18222d' : 'var(--line)';
+    cell.title = `第 ${i} 个神经元：输出 ${h1[i].toFixed(3)}；点击查看权重`;
   }
+}
+
+function renderWeightHeat(j) {
+  const row = NET.layers[0].w[j];
+  const box = document.getElementById('weightHeat');
+  box.innerHTML = row.map((w, i) => `<span class="cell" style="background:${heatColor(w, 1.5)}" title="w${i} = ${w.toFixed(4)}：${OBS_NAMES[i]}"></span>`).join('');
+  document.getElementById('weightNeuron').textContent = String(j);
 }
 
 function showMath(j) {
-  const NET1 = NET.layers[0];
+  netState.selectedNeuron = j;
   const obs = buildObs();
-  const row = NET1.w[j];
-  const b = NET1.b[j];
-  const parts = row.map((w, i) => ({ w, x: obs[i], prod: w * obs[i], i }))
-    .sort((a, b2) => Math.abs(b2.prod) - Math.abs(a.prod))
-    .slice(0, 5);
-  const sum = parts.reduce((s, p) => s + p.prod, 0) + b;
-  const out = Math.tanh(sum);
-  const lines = parts.map((p) => `  ${p.w >= 0 ? '+' : ''}${p.w.toFixed(3)} × ${OBS_NAMES[p.i]}(${p.x.toFixed(2)}) = ${p.prod.toFixed(3)}`);
-  const rest = row.reduce((s, w, i) => s + (parts.find((p) => p.i === i) ? 0 : w * obs[i]), 0);
+  const acts = netState.latestActs || forwardNet(obs);
+  const layer = NET.layers[0];
+  const row = layer.w[j];
+  const b = layer.b[j];
+  const all = row.map((w, i) => ({ w, x: obs[i], prod: w * obs[i], i }));
+  const top = all.slice().sort((a, b2) => Math.abs(b2.prod) - Math.abs(a.prod)).slice(0, 5);
+  const chosen = new Set(top.map((p) => p.i));
+  const rest = all.reduce((sum, p) => sum + (chosen.has(p.i) ? 0 : p.prod), 0);
+  const total = b + all.reduce((sum, p) => sum + p.prod, 0);
+  const lines = top.map((p) => `  ${p.w >= 0 ? '+' : ''}${p.w.toFixed(3)} × ${OBS_NAMES[p.i]}(${p.x.toFixed(2)}) = ${p.prod.toFixed(3)}`);
   const note = document.getElementById('mathNote');
   note.className = 'note';
-  note.innerHTML =
-    `<b>第 ${j} 个特征 = 64 个数里挑出贡献最大的 5 个：</b><br>` +
-    `<span style="font-family:var(--mono);font-size:11px;line-height:1.8;white-space:pre-wrap;">${lines.join('\n')}\n  其余 31 项 + 偏置 ${b.toFixed(3)} 合计 ${rest.toFixed(3)}\n  → 求和 ${sum.toFixed(3)} → tanh → <b>${out.toFixed(3)}</b>（这就是那个格子的亮度）</span>`;
-  netState.picked = true;
-  checkNetDone();
-}
-
-/* ── 梯度演示 ── */
-let theta = -2.4;
-function drawGrad() {
-  const cv = document.getElementById('gradCanvas');
-  if (!cv || !cv.clientWidth) return;
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
-  const w = cv.clientWidth, h = cv.clientHeight;
-  cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
-  const ctx = cv.getContext('2d');
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  ctx.clearRect(0, 0, w, h);
-  const pad = { l: 26, r: 12, t: 10, b: 20 };
-  const pw = w - pad.l - pad.r, ph = h - pad.t - pad.b;
-  const X = (t) => pad.l + pw * ((t + 3) / 6);
-  const L = (t) => (t * t) / 4 + 0.3;
-  const Y = (v) => pad.t + ph * (1 - v / 3.6);
-  ctx.strokeStyle = '#eef1f5';
-  ctx.beginPath(); ctx.moveTo(pad.l, Y(0)); ctx.lineTo(w - pad.r, Y(0)); ctx.stroke();
-  ctx.strokeStyle = '#b8c0ca'; ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  for (let t = -3; t <= 3; t += 0.05) {
-    const v = L(t);
-    t === -3 ? ctx.moveTo(X(t), Y(v)) : ctx.lineTo(X(t), Y(v));
-  }
-  ctx.stroke();
-  // 最优
-  ctx.strokeStyle = '#1f7a60'; ctx.setLineDash([3, 3]);
-  ctx.beginPath(); ctx.moveTo(X(0), pad.t); ctx.lineTo(X(0), h - pad.b); ctx.stroke();
-  ctx.setLineDash([]);
-  // 小球
-  ctx.fillStyle = '#d98324';
-  ctx.beginPath(); ctx.arc(X(theta), Y(L(theta)), 6, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = '#8894a1'; ctx.font = '9.5px -apple-system, sans-serif';
-  ctx.fillText('横轴 = 一个参数的值，纵轴 = 分数损失（越低越好）', pad.l, h - 6);
-  document.getElementById('gradState').textContent = `参数 θ = ${theta.toFixed(2)} · 损失 ${L(theta).toFixed(2)}`;
-}
-
-function gradStep() {
-  const lr = 0.6;
-  const grad = theta / 2;                       // L = θ²/4 + 0.3 的导数
-  theta -= lr * grad;
-  drawGrad();
-}
-
-let netState = { moved: false, picked: false };
-function checkNetDone() {
-  const n = (netState.moved ? 1 : 0) + (netState.picked ? 1 : 0);
-  const el = document.getElementById('m7state');
-  if (el) el.textContent = n >= 2 ? '已通关' : `${n} / 2`;
-  if (n >= 2) mark('s7');
-}
-
-async function renderNet() {
-  await loadNet();
-  const obs = buildObs();
-  const acts = forwardNet(obs);
-  renderObsList(obs);
-  renderOutList(acts[3]);
+  note.innerHTML = `<b>第 ${j} 个神经元仍然只是第一步那笔计算：</b><br>` +
+    `<span style="font-family:var(--mono);font-size:11px;line-height:1.8;white-space:pre-wrap;">贡献最大的 5 项：\n${lines.join('\n')}\n其余 31 项合计 ${rest.toFixed(3)}；偏置 b = ${b.toFixed(3)}\n全部相加：z = ${total.toFixed(3)}\ntanh(z) = ${Math.tanh(total).toFixed(3)}</span>`;
   renderHeat(acts);
-  driveDuckNet(acts[3]);
+  renderWeightHeat(j);
+}
+
+async function renderRealDetails() {
+  await loadNet();
+  const acts = forwardNet(buildObs());
+  netState.latestActs = acts;
+  renderHeat(acts);
+  showMath(netState.selectedNeuron);
+}
+
+document.getElementById('netDetails').addEventListener('toggle', (e) => {
+  if (!e.target.open) return;
+  renderRealDetails().catch((err) => {
+    document.getElementById('mathNote').textContent = '真实权重暂时没能载入，请通过本地 HTTP 服务打开课程后重试。';
+    console.error(err);
+  });
+});
+
+/* ── 第四步：只有用户点击后才运行真实前向 ── */
+async function renderNet() {
+  const status = document.getElementById('netStatus');
+  status.className = 'demo-status';
+  status.textContent = '正在读取真实权重并计算…';
+  try {
+    await loadNet();
+    const obs = buildObs();
+    const acts = forwardNet(obs);
+    netState.latestActs = acts;
+    renderObsList(obs);
+    renderOutList(acts[3]);
+    await driveDuckNet(acts[3]);
+    netState.ran = true;
+    status.className = 'demo-status ok';
+    status.textContent = '完成：36 个输入已经过两层各 64 个神经元，得到右边 14 个动作。改滑块会立即重算。';
+    if (document.getElementById('netDetails').open) await renderRealDetails();
+    syncNetProgress();
+  } catch (err) {
+    status.className = 'demo-status bad';
+    status.textContent = '没能载入真实策略。请通过本地 HTTP 服务打开课程，再点一次运行。';
+    console.error(err);
+  }
 }
 
 /* ── 事件绑定 ── */
 (function bindNet() {
+  document.getElementById('toLesson2').onclick = () => unlockLesson(2);
+  document.getElementById('toLesson3').onclick = () => unlockLesson(3);
+  document.getElementById('toLesson4').onclick = () => unlockLesson(4);
+  document.getElementById('btnRunNet').onclick = renderNet;
   const t = document.getElementById('tiltX');
   const k = document.getElementById('kneeL');
   const h = document.getElementById('hgt');
@@ -2890,13 +3221,17 @@ async function renderNet() {
     document.getElementById('tiltXv').textContent = t.value + '°';
     document.getElementById('kneeLv').textContent = k.value + '°';
     document.getElementById('hgtv').textContent = h.value + ' cm';
-    netState.moved = true;
-    renderNet();
-    checkNetDone();
+    if (netState.ran) renderNet();
+    else {
+      const status = document.getElementById('netStatus');
+      status.className = 'demo-status';
+      status.textContent = '输入已改好。点“用真权重运行一次”看结果。';
+    }
   };
   [t, k, h].forEach((el) => el.addEventListener('input', on));
-  document.getElementById('btnGrad').onclick = gradStep;
-  document.getElementById('btnGradMany').onclick = () => { for (let i = 0; i < 30; i++) setTimeout(gradStep, i * 90); };
+  drawTanhCurve();
+  setTanh(0.5);
+  syncNetProgress();
 })();
 
 /* ════════════════════════════════════════════════════════════
