@@ -41,36 +41,50 @@
     <canvas id="view"></canvas>
 
     <section class="training-cockpit" id="training-cockpit" aria-label="行走训练与神经网络驾驶舱" hidden>
+      <div class="cockpit-robot-hud">
+        <span class="robot-hud-mode">MICRODUCK · <b id="robot-hud-task">WALK</b></span>
+        <span>POLICY <b>50 Hz</b></span><span>REWARD <b id="robot-hud-reward">—</b></span><span>SPEED <b id="robot-hud-speed">—</b></span>
+        <button id="cockpit-play">暂停物理</button><button id="cockpit-poke">推一下</button>
+      </div>
       <header class="cockpit-header">
-        <div class="cockpit-title"><span>MICRODUCK / ROBOT BRAIN ENGINE</span><b>训练驾驶舱</b></div>
+        <div class="cockpit-title"><span>ROBOT BRAIN ENGINE</span><b>训练驾驶舱</b></div>
         <div class="cockpit-live"><span id="cockpit-source">等待策略数据</span><small id="cockpit-task-note">真实网络 · 真实物理 · 非装饰动画</small></div>
         <div class="cockpit-controls">
           <select id="cockpit-task" aria-label="驾驶舱训练任务"><option value="stand">站立</option><option value="walk">行走实验</option></select>
-          <button id="cockpit-start">开始训练</button><button id="cockpit-pause">暂停训练</button><button id="cockpit-test">测试当前 actor</button>
+          <button id="cockpit-start">开始训练</button><button id="cockpit-pause">暂停</button><button id="cockpit-test">测试 actor</button>
           <button id="cockpit-close" title="退出驾驶舱">×</button>
         </div>
       </header>
+      <nav class="cockpit-pipeline" aria-label="强化学习数据链">
+        <button data-pipeline="sense" class="active"><i>01</i> SENSE <span>观测</span></button><b>→</b>
+        <button data-pipeline="estimate"><i>02</i> ESTIMATE <span>网络前向</span></button><b>→</b>
+        <button data-pipeline="act"><i>03</i> ACT <span>关节动作</span></button><b>→</b>
+        <button data-pipeline="learn"><i>04</i> LEARN <span>奖励与 PPO</span></button>
+      </nav>
       <div class="cockpit-grid">
-        <aside class="cockpit-panel cockpit-obs-panel">
-          <div class="cockpit-panel-title"><span>01 / OBSERVE</span><b>它看到了什么</b><em id="cockpit-obs-dim">—</em></div>
+        <aside class="cockpit-panel cockpit-obs-panel" data-panel="sense">
+          <div class="cockpit-panel-title"><span>SENSE / INPUT</span><b>机器人感知</b><em id="cockpit-obs-dim">—</em></div>
           <div class="cockpit-observations" id="cockpit-observations"></div>
         </aside>
-        <section class="cockpit-panel cockpit-network-panel">
-          <div class="cockpit-panel-title"><span>02 / ACTOR FORWARD</span><b>真实神经元与权重</b><em>点节点看计算</em></div>
+        <section class="cockpit-panel cockpit-network-panel" data-panel="estimate">
+          <div class="cockpit-panel-title">
+            <span>ESTIMATE / ACTOR</span><b>神经网络状态</b>
+            <div class="cockpit-view-tabs"><button id="cockpit-view-topology" class="active">空间拓扑</button><button id="cockpit-view-layers">层级结构</button><button id="cockpit-forward">▶ 前向一遍</button></div>
+          </div>
           <canvas id="cockpit-network-canvas" aria-label="可点击的真实 actor 神经网络"></canvas>
-          <div class="cockpit-network-legend"><span><i class="positive"></i>正值 / 正权重</span><span><i class="negative"></i>负值 / 负权重</span><span>每个节点显示最强 6 条入边</span><span>观测 → 动作 → 物理 → 奖励 → PPO 更新</span></div>
+          <div class="cockpit-network-legend"><span><i class="positive"></i>正值 / 正权重</span><span><i class="negative"></i>负值 / 负权重</span><span>真实激活 · 每节点最强 6 条入边</span></div>
           <pre id="cockpit-neuron-detail">点一个神经元，看它的输入、权重、bias 和激活结果。</pre>
         </section>
-        <aside class="cockpit-panel cockpit-action-panel">
-          <div class="cockpit-panel-title"><span>03 / ACT</span><b>它怎样动关节</b><em>14 路</em></div>
+        <aside class="cockpit-panel cockpit-action-panel" data-panel="act">
+          <div class="cockpit-panel-title"><span>ACT / OUTPUT</span><b>动作与步态</b><button id="cockpit-actions-toggle">全部 14 路</button></div>
           <small id="cockpit-action-mode" class="cockpit-action-mode">actor 输出</small>
           <div class="cockpit-actions" id="cockpit-actions"></div>
-          <div class="cockpit-gait-head"><b>步态与接触</b><span id="cockpit-speed">—</span></div>
+          <div class="cockpit-gait-head"><b>GAIT / CONTACT</b><span id="cockpit-speed">—</span></div>
           <canvas id="cockpit-gait-canvas" aria-label="步态相位与直立状态"></canvas>
           <div class="cockpit-feet"><span id="cockpit-left-foot" class="cockpit-foot">左脚</span><span id="cockpit-right-foot" class="cockpit-foot">右脚</span></div>
         </aside>
       </div>
-      <footer class="cockpit-bottom">
+      <footer class="cockpit-bottom" data-panel="learn">
         <div class="cockpit-kpis">
           <div><span>即时奖励</span><b id="cockpit-reward">—</b></div>
           <div><span>回合回报</span><b id="cockpit-return">—</b></div>
@@ -79,9 +93,12 @@
           <div><span>回合状态</span><b id="cockpit-episode">—</b></div>
           <div><span>PPO 轮次</span><b id="cockpit-iteration">0</b></div>
         </div>
-        <div class="cockpit-loss-kpis"><span>actor loss <b id="cockpit-policy-loss">—</b></span><span>critic loss <b id="cockpit-value-loss">—</b></span><span>entropy <b id="cockpit-entropy">—</b></span></div>
-        <canvas id="cockpit-loss-chart" aria-label="真实训练回报与损失曲线"></canvas>
-        <div class="cockpit-sim-actions"><button id="cockpit-play">暂停物理</button><button id="cockpit-poke">推一下</button></div>
+        <div class="cockpit-chart-grid">
+          <section class="cockpit-chart-card"><header><span>LEARN / RETURN + LOSS</span><small>actor <b id="cockpit-policy-loss">—</b> · critic <b id="cockpit-value-loss">—</b> · H <b id="cockpit-entropy">—</b></small></header><canvas id="cockpit-loss-chart"></canvas></section>
+          <section class="cockpit-chart-card"><header><span>ACT / JOINT SIGNAL</span><small>动作随时间变化</small></header><canvas id="cockpit-action-chart"></canvas></section>
+          <section class="cockpit-chart-card"><header><span>SENSE / IMU</span><small>角速度 x / y / z</small></header><canvas id="cockpit-imu-chart"></canvas></section>
+          <section class="cockpit-chart-card"><header><span>GAIT / PHASE</span><small>相位 sin / cos</small></header><canvas id="cockpit-phase-chart"></canvas></section>
+        </div>
       </footer>
     </section>
 
