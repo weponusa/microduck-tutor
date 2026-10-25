@@ -506,6 +506,9 @@ kbd {
 .sensor-facts ul { margin: 7px 0; padding-left: 17px; }
 .sensor-facts a { color: #287866; font-size: 10px; }
 .sensor-source-links { display: flex; gap: 12px; flex-wrap: wrap; }
+.hardware-course-link { display: block; text-align: center; white-space: normal; text-decoration: none; color: #236c5b; border-color: #b9d5ca; background: #f3faf7; }
+.sensor-hardware-link { display: block; margin-top: 7px; color: #287866; font-size: 10px; line-height: 1.5; text-decoration: none; }
+.sensor-hardware-link:hover { text-decoration: underline; }
 
 /* 真实训练室 */
 .training-card { border-color: #cfdedb; background: linear-gradient(180deg, #f9fdfc 0%, #fff 46%); }

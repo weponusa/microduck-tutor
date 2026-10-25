@@ -127,6 +127,7 @@ const ui = {
   sensorStatus: document.getElementById('sensor-status'),
   sensorDescription: document.getElementById('sensor-description'),
   sensorReading: document.getElementById('sensor-reading'),
+  sensorHardwareLink: document.getElementById('sensor-hardware-link'),
   sensorTofControl: document.getElementById('sensor-tof-control'),
   sensorTofDistance: document.getElementById('sensor-tof-distance'),
   sensorTofValue: document.getElementById('sensor-tof-value'),
@@ -1076,6 +1077,10 @@ function updateTelemetry(now) {
 }
 
 /* ── 传感器互动拆解 ───────────────────────────── */
+const SENSOR_HARDWARE_LESSONS = {
+  camera: 'camera', tof: 'tof', bodyImu: 'imu', headImu: 'imu', joints: 'servo',
+  audio: 'audio', nfc: 'nfc', feet: 'feet', wireless: 'wireless',
+};
 let lastSensorReading = 0;
 
 function updateSensorReading() {
@@ -1107,6 +1112,7 @@ function selectSensorTopic(id) {
   const demoLabels = { audio: '试听合成嘎嘎声（非官方声纹）', nfc: '模拟 NFC 标签靠近', wireless: '演示无线连接脉冲' };
   ui.sensorDemo.hidden = !demoLabels[topic.id];
   ui.sensorDemo.textContent = demoLabels[topic.id] || '';
+  ui.sensorHardwareLink.href = `./hardware.html#${SENSOR_HARDWARE_LESSONS[topic.id] || 'system'}`;
   updateSensorReading();
 }
 

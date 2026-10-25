@@ -6,7 +6,7 @@ export const SENSOR_TOPICS = [
     title: '前置相机',
     short: '相机 · REC',
     status: '官方确认 · 仿真未建模',
-    description: '官方确认前置相机与专用相机使用指示灯（经典 REC 灯造型），官方软件栈 mediad 可通过 WebRTC 传输摄像头画面。分辨率和视场角 FOV 尚未确定；当前 MJCF 只有安装位置，没有图像采集仿真。四棱锥和红点仅用于说明位置与指示灯概念。',
+    description: '官方确认前置相机与专用相机使用指示灯（经典 REC 灯造型），mediad 可通过 WebRTC 传输画面。官方驱动还区分 zero3 的 IMX219 与 beta 的 GC2093，但零售产品的最终分辨率和视场角仍未公布。当前 MJCF 只有安装位置，没有图像采集仿真；四棱锥和红点仅用于说明位置与指示灯概念。',
     boundary: '视场线框是形状示意，不代表真实 FOV、成像范围或画面；REC 点也不表示设备正在录制。',
   },
   {
@@ -22,7 +22,7 @@ export const SENSOR_TOPICS = [
     title: '机身 IMU',
     short: '机身 IMU',
     status: '教学模型真实数据',
-    description: '官方确认机器人采用机身与头部双 IMU。当前 MJCF 在躯干 imu site 上配置了姿态、陀螺仪和加速度计，可读取本次物理仿真的 sensordata。三支坐标轴显示该 site 的实时仿真姿态。',
+    description: '官方确认机器人采用机身与头部双 IMU。当前 MJCF 在躯干 imu site 上配置了姿态、陀螺仪和加速度计，可读取本次物理仿真的 sensordata。官方运行时中，躯干 LSM6DSV16X 经 imu_to_dxl 进入 50 Hz 控制环；三支坐标轴显示该 site 的实时仿真姿态。',
     boundary: '数值来自 MuJoCo 教学模型而非硬件 IMU；模型噪声参数不等于实机误差特性。',
   },
   {
@@ -30,7 +30,7 @@ export const SENSOR_TOPICS = [
     title: '头部 IMU',
     short: '头部 IMU',
     status: '官方确认 · 仿真未建模',
-    description: '官方确认头部另有 IMU，与机身 IMU 构成双 IMU 配置。当前 MJCF 仅放置 head_imu site，没有对应 sensor，因此这里只显示安装点的坐标轴朝向。没有任何头部角速度或加速度读数。',
+    description: '官方确认头部另有 IMU，与机身 IMU 构成双 IMU 配置。官方运行时按板型分别读取：zero3 的 HAT BMI088 由 tofd 负责且默认关闭，beta 的 LSM6DSV16X 由 robotd 读取。当前 MJCF 仅放置 head_imu site，没有对应 sensor，因此这里只显示安装点的坐标轴朝向，没有任何头部角速度或加速度读数。',
     boundary: '坐标轴来自 head_imu site 的位姿，不是头部 IMU 的 sensordata，也不能替代实机采样。',
   },
   {

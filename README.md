@@ -46,6 +46,7 @@
 | --- | --- |
 | `index.html` | 整站首页与学习路线 |
 | `simulator.html` | MuJoCo + three.js 物理沙盒、浏览器内 PPO 训练室与策略测试台 |
+| `hardware.html` | 13 讲电路板与传感器拆解课，附官方 HAT 原理图与 BOM |
 | `cover.html` | 旧封面地址的兼容跳转 |
 | `rl-lab/course.html` | 八关互动课程，按关卡展开对应读本 |
 | `rl-lab/start-here.html` | 读本唯一内容源、完整阅读与自测 |
@@ -88,9 +89,18 @@ python3 -m venv .venv
 - **真实仿真数据**：躯干 IMU 的 `sensordata`、14 路关节 `qpos / ctrl`、MuJoCo 左右脚碰撞接触。
 - **教学示意**：相机视场线框、可拖距离的 64 点 ToF 网格、NFC/无线脉冲和 WebAudio 合成嘎嘎声，均明确标注为非硬件读数。
 - **产品口径**：官方现售产品为 15 个电机、25 cm、800 g 以下、50 Hz 控制环；本教学模型为 14 路执行器，两者不混用。
-- **事实边界**：相机分辨率/视场角、ToF 型号与量程尚未最终公布；脚底压力传感仅有社区拆解口径，页面标记为待官方确认。开源的是软件栈，不是机械与电路设计文件。
+- **事实边界**：相机分辨率/视场角、ToF 型号与量程尚未最终公布；脚底压力传感仅有社区拆解口径，页面标记为待官方确认。整机不是完整开源硬件；RPI Robot HAT 已单独公开 KiCad / PCB / BOM，但不代表 imu_to_dxl、制造级机械 CAD、完整线束和整机 BOM 都已开放。
 
 规格来源：[Pollen Robotics 官方 press kit](https://pollen-robotics.com/microduck/press-kit/) 与[官方软件栈](https://github.com/pollen-robotics/microduck)。
+
+## 电路板与传感器拆解课
+
+从模拟器进入 `hardware.html`，共 13 讲：整机电子地图、主控板、RPI Robot HAT、imu_to_dxl、XL330、相机、ToF、双 IMU、音频、NFC、电源、脚底和无线。
+
+- 每一讲都有可点击的器件逻辑图、数据旅程、接口说明、事实边界和原始来源；三维传感器页也能跳到对应课程。
+- 互动实验包括 IMU 12 字节拆解、8×8 ToF 矩阵、15 电机 / 14 策略动作、相机像素链、双 NFC 轮询和电压边界。
+- 官方 RPI Robot HAT D1 的渲染、原理图 PDF 和 BOM CSV 随站提供；另链接 KiCad、Gerber、贴片坐标与 STEP。
+- 参考资料区分官方 `microduck` / `microduck_rl` / HAT、社区复刻教程与 Open Duck Mini，不把不同板型和社区方案混成官方量产配置。
 
 ## 浏览器里的真实训练室
 
@@ -114,5 +124,6 @@ python3 -m venv .venv
 | 用于网页展示的模型 | `assets/duck/` | 由上述模型导出 | Apache-2.0 |
 | MuJoCo 3.16 WASM | `vendor/mujoco/` | `@mujoco/mujoco` | Apache-2.0 |
 | three.js r170 与 OrbitControls | `vendor/three/` | `three` | MIT |
+| RPI Robot HAT D1 渲染、原理图与 BOM | `assets/hardware/` | `pollen-robotics/elec_RPI_Robot_HAT` | Apache-2.0 |
 
 `js/mjcfScene.js` 的场景构建参考了 `zalo/mujoco_wasm`（MIT），保留 MuJoCo 的 Z-up 坐标。第三方资源许可证随对应目录保留。
