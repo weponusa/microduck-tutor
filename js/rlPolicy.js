@@ -83,10 +83,11 @@ function defaultNormal() {
   return Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
 }
 
-export function forwardPolicy(net, observation, { sample = false, normal = defaultNormal } = {}) {
+export function forwardPolicyTrace(net, observation, { sample = false, normal = defaultNormal } = {}) {
   if (!observation || observation.length !== net.obs_dim) {
     throw new Error(`观测必须是 ${net.obs_dim} 维`);
   }
+  const activations = [observation];
   let h = observation;
   for (const layer of net.layers) {
     const out = new Float64Array(layer.w.length);
@@ -96,18 +97,26 @@ export function forwardPolicy(net, observation, { sample = false, normal = defau
       for (let i = 0; i < row.length; i++) value += row[i] * h[i];
       out[o] = Math.tanh(value);
     }
+    activations.push(out);
     h = out;
   }
 
+  const mean = new Float64Array(net.act_dim);
   const action = new Float64Array(net.act_dim);
   for (let o = 0; o < net.act_dim; o++) {
     const row = net.action_head.w[o];
     let value = net.action_head.b[o];
     for (let i = 0; i < row.length; i++) value += row[i] * h[i];
+    mean[o] = value;
     if (sample) value += Math.exp(net.log_std[o]) * normal();
     action[o] = Math.max(-1, Math.min(1, value));
   }
-  return action;
+  activations.push(mean);
+  return { action, mean, activations };
+}
+
+export function forwardPolicy(net, observation, options = {}) {
+  return forwardPolicyTrace(net, observation, options).action;
 }
 
 export class DuckPolicyRuntime {

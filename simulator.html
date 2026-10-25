@@ -6,6 +6,7 @@
 <title>MicroDuck 物理沙盒 · 真实训练与策略测试</title>
 <link rel="stylesheet" href="./css/style.css" />
 <link rel="stylesheet" href="./css/site.css" />
+<link rel="stylesheet" href="./css/cockpit.css" />
 <script src="./js/site.js" defer></script>
 <script type="importmap">
 {
@@ -39,6 +40,52 @@
   <section class="stage" id="stage">
     <canvas id="view"></canvas>
 
+    <section class="training-cockpit" id="training-cockpit" aria-label="行走训练与神经网络驾驶舱" hidden>
+      <header class="cockpit-header">
+        <div class="cockpit-title"><span>MICRODUCK / ROBOT BRAIN ENGINE</span><b>训练驾驶舱</b></div>
+        <div class="cockpit-live"><span id="cockpit-source">等待策略数据</span><small id="cockpit-task-note">真实网络 · 真实物理 · 非装饰动画</small></div>
+        <div class="cockpit-controls">
+          <select id="cockpit-task" aria-label="驾驶舱训练任务"><option value="stand">站立</option><option value="walk">行走实验</option></select>
+          <button id="cockpit-start">开始训练</button><button id="cockpit-pause">暂停训练</button><button id="cockpit-test">测试当前 actor</button>
+          <button id="cockpit-close" title="退出驾驶舱">×</button>
+        </div>
+      </header>
+      <div class="cockpit-grid">
+        <aside class="cockpit-panel cockpit-obs-panel">
+          <div class="cockpit-panel-title"><span>01 / OBSERVE</span><b>它看到了什么</b><em id="cockpit-obs-dim">—</em></div>
+          <div class="cockpit-observations" id="cockpit-observations"></div>
+        </aside>
+        <section class="cockpit-panel cockpit-network-panel">
+          <div class="cockpit-panel-title"><span>02 / ACTOR FORWARD</span><b>真实神经元与权重</b><em>点节点看计算</em></div>
+          <canvas id="cockpit-network-canvas" aria-label="可点击的真实 actor 神经网络"></canvas>
+          <div class="cockpit-network-legend"><span><i class="positive"></i>正值 / 正权重</span><span><i class="negative"></i>负值 / 负权重</span><span>每个节点显示最强 6 条入边</span><span>观测 → 动作 → 物理 → 奖励 → PPO 更新</span></div>
+          <pre id="cockpit-neuron-detail">点一个神经元，看它的输入、权重、bias 和激活结果。</pre>
+        </section>
+        <aside class="cockpit-panel cockpit-action-panel">
+          <div class="cockpit-panel-title"><span>03 / ACT</span><b>它怎样动关节</b><em>14 路</em></div>
+          <small id="cockpit-action-mode" class="cockpit-action-mode">actor 输出</small>
+          <div class="cockpit-actions" id="cockpit-actions"></div>
+          <div class="cockpit-gait-head"><b>步态与接触</b><span id="cockpit-speed">—</span></div>
+          <canvas id="cockpit-gait-canvas" aria-label="步态相位与直立状态"></canvas>
+          <div class="cockpit-feet"><span id="cockpit-left-foot" class="cockpit-foot">左脚</span><span id="cockpit-right-foot" class="cockpit-foot">右脚</span></div>
+        </aside>
+      </div>
+      <footer class="cockpit-bottom">
+        <div class="cockpit-kpis">
+          <div><span>即时奖励</span><b id="cockpit-reward">—</b></div>
+          <div><span>回合回报</span><b id="cockpit-return">—</b></div>
+          <div><span>critic 估值</span><b id="cockpit-critic">—</b></div>
+          <div><span>前进位移</span><b id="cockpit-distance">—</b></div>
+          <div><span>回合状态</span><b id="cockpit-episode">—</b></div>
+          <div><span>PPO 轮次</span><b id="cockpit-iteration">0</b></div>
+        </div>
+        <div class="cockpit-loss-kpis"><span>actor loss <b id="cockpit-policy-loss">—</b></span><span>critic loss <b id="cockpit-value-loss">—</b></span><span>entropy <b id="cockpit-entropy">—</b></span></div>
+        <canvas id="cockpit-loss-chart" aria-label="真实训练回报与损失曲线"></canvas>
+        <div class="cockpit-sim-actions"><button id="cockpit-play">暂停物理</button><button id="cockpit-poke">推一下</button></div>
+      </footer>
+    </section>
+
+    <button id="btn-cockpit-mode" class="cockpit-mode-launch" aria-pressed="false">▦ 训练驾驶舱</button>
     <button id="btn-sensor-mode" class="sensor-mode-launch" aria-pressed="false">◎ 传感器拆解</button>
 
     <div class="stage-hint" id="stage-hint">

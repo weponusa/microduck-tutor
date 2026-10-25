@@ -5,6 +5,7 @@ import { buildMujocoScene, updateBodyTransforms } from './mjcfScene.js';
 import { ACT_NAMES, DuckPolicyRuntime, OBS_NAMES, RL, WALK_OBS_NAMES, loadPolicy } from './rlPolicy.js';
 import { TrainingClient } from './rlTraining.js';
 import { SENSOR_TOPICS, SensorExplorer } from './sensorExplorer.js';
+import { TrainingCockpit } from './trainingCockpit.js';
 
 const MODEL_DIR = './assets/mjcf/microduck/';
 const DEG = 180 / Math.PI;
@@ -43,6 +44,11 @@ const app = {
   trainingBusy: false,
   trainingMetrics: null,
   trainingHistory: [],
+  trainingActor: null,
+  trainingTelemetry: null,
+  cockpitMode: false,
+  cockpit: null,
+  cockpitCameraZoom: null,
   sensorMode: false,
   sensorSelected: 'camera',
   sensorExplorer: null,
@@ -118,6 +124,7 @@ const ui = {
   walkWarning: document.getElementById('walk-warning'),
   checkpointNote: document.getElementById('checkpoint-note'),
   stageHint: document.getElementById('stage-hint'),
+  cockpitModeButton: document.getElementById('btn-cockpit-mode'),
   sensorModeButton: document.getElementById('btn-sensor-mode'),
   sensorToggle: document.getElementById('btn-sensor-toggle'),
   sensorBadge: document.getElementById('sensor-mode-badge'),
@@ -151,6 +158,10 @@ camera.up.set(0, 0, 1); // MuJoCo 是 Z-up
 camera.position.set(0.5, -0.55, 0.32);
 
 const controls = new OrbitControls(camera, ui.canvas);
+const cockpitFollowTarget = new THREE.Vector3();
+const cockpitFollowDelta = new THREE.Vector3();
+const cockpitFollowBox = new THREE.Box3();
+let lastCockpitFollow = 0;
 controls.enableDamping = true;
 controls.dampingFactor = 0.08;
 controls.minDistance = 0.12;
@@ -191,6 +202,67 @@ const sensorExplorer = new SensorExplorer({
   onSelect: (id) => selectSensorTopic(id),
 });
 app.sensorExplorer = sensorExplorer;
+
+const cockpit = new TrainingCockpit({
+  onStart: () => ui.trainingStart.click(),
+  onPause: () => ui.trainingPause.click(),
+  onTest: () => ui.trainingTest.click(),
+  onTask: (task) => {
+    if (ui.trainingTask.value === task) return;
+    ui.trainingTask.value = task;
+    ui.trainingTask.dispatchEvent(new Event('change'));
+  },
+  onClose: () => setCockpitMode(false),
+  onTogglePlay: () => setPaused(!app.paused),
+  onPoke: () => ui.pokeBtn.click(),
+});
+app.cockpit = cockpit;
+
+function followCockpitRobot(alpha = 0.12) {
+  if (!app.data) return;
+  const now = performance.now();
+  if (alpha < 1 && now - lastCockpitFollow < 120) return;
+  lastCockpitFollow = now;
+  cockpitFollowBox.makeEmpty();
+  for (const mesh of app.visualMeshes) {
+    if (mesh.geometry.type === 'PlaneGeometry') continue;
+    mesh.updateWorldMatrix(true, false);
+    mesh.geometry.computeBoundingBox();
+    cockpitFollowBox.union(mesh.geometry.boundingBox.clone().applyMatrix4(mesh.matrixWorld));
+  }
+  if (cockpitFollowBox.isEmpty()) return;
+  cockpitFollowBox.getCenter(cockpitFollowTarget);
+  cockpitFollowDelta.copy(cockpitFollowTarget).sub(controls.target).multiplyScalar(alpha);
+  controls.target.add(cockpitFollowDelta);
+  camera.position.add(cockpitFollowDelta);
+}
+
+function setCockpitMode(enabled) {
+  if (enabled && app.sensorMode) setSensorMode(false);
+  if (enabled && !app.trainingReady && app.controlMode !== 'policy' && ui.trainingTask.value !== 'walk') {
+    ui.trainingTask.value = 'walk';
+    ui.trainingTask.dispatchEvent(new Event('change'));
+  }
+  app.cockpitMode = Boolean(enabled);
+  if (app.cockpitMode) {
+    app.cockpitCameraZoom = camera.zoom;
+    camera.zoom = Math.min(camera.zoom, ui.stage.clientWidth < 600 ? 0.62 : 0.78);
+  } else if (app.cockpitCameraZoom !== null) {
+    camera.zoom = app.cockpitCameraZoom;
+    app.cockpitCameraZoom = null;
+  }
+  camera.updateProjectionMatrix();
+  document.body.classList.toggle('cockpit-mode', app.cockpitMode);
+  cockpit.setEnabled(app.cockpitMode);
+  ui.cockpitModeButton.textContent = app.cockpitMode ? '× 退出驾驶舱' : '▦ 训练驾驶舱';
+  ui.cockpitModeButton.classList.toggle('active', app.cockpitMode);
+  ui.cockpitModeButton.setAttribute('aria-pressed', String(app.cockpitMode));
+  resize();
+  if (app.cockpitMode) followCockpitRobot(1);
+  cockpit.update(app, performance.now(), true);
+}
+
+ui.cockpitModeButton.addEventListener('click', () => setCockpitMode(!app.cockpitMode));
 
 function resize() {
   const w = ui.stage.clientWidth;
@@ -704,6 +776,8 @@ function finiteMetric(value, digits = 3) {
 function resetTrainingMetrics() {
   app.trainingMetrics = null;
   app.trainingHistory = [];
+  app.trainingActor = null;
+  app.trainingTelemetry = null;
   ui.trainingIteration.textContent = '0';
   ui.trainingSteps.textContent = '0';
   ui.trainingReturn.textContent = '—';
@@ -810,7 +884,12 @@ function drawTrainingChart() {
   panel(137, 169, [(m) => m.policyLoss, (m) => m.valueLoss], ['#e08a1e', '#4380ce'], ['策略损失', '价值损失']);
 }
 
+function handleTrainingTelemetry(message) {
+  app.trainingTelemetry = message;
+}
+
 function handleTrainingMetrics(message) {
+  if (message.actor) app.trainingActor = message.actor;
   const previous = app.trainingHistory[app.trainingHistory.length - 1];
   const metric = {
     iteration: Number(message.iteration ?? message.update ?? previous?.iteration ?? 0),
@@ -868,7 +947,9 @@ async function initTraining() {
     setTrainingState(mode === 'resume' ? '正在恢复 actor、critic、Adam 和训练步数…' : '正在启动第二套 MuJoCo 物理环境…');
     await app.trainer.init({ task, fromPretrained: mode === 'pretrained', checkpoint });
     app.trainingReady = true;
+    const initializedActor = app.trainingActor;
     resetTrainingMetrics();
+    app.trainingActor = initializedActor;
     const label = task === 'walk' ? '行走实验' : '站立';
     setTrainingState(`${label}环境已就绪。点击“开始训练”后才会采样和更新权重；训练期间左侧测试保持暂停。`);
   } catch (error) {
@@ -1182,12 +1263,14 @@ function frame(now) {
     updateTelemetry(now);
   }
 
+  if (app.cockpitMode) followCockpitRobot();
   controls.update();
   sensorExplorer.update(now);
   if (app.sensorMode && now - lastSensorReading > 120) {
     updateSensorReading();
     lastSensorReading = now;
   }
+  if (app.cockpitMode) cockpit.update(app, now);
   renderer.render(scene, camera);
 }
 
@@ -1350,6 +1433,7 @@ async function boot() {
   resetPolicyMetrics();
   app.trainer = new TrainingClient({
     onMetrics: handleTrainingMetrics,
+    onTelemetry: handleTrainingTelemetry,
     onStatus: () => updateTrainingButtons(),
     onError: (error) => setTrainingState(`训练错误：${error.message}`, 'error'),
   });

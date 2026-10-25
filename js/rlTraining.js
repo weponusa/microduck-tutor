@@ -59,7 +59,7 @@ async function idbDelete(key) {
 
 /** Main-thread client for the real MuJoCo + PPO worker. */
 export class TrainingClient {
-  constructor({ onMetrics, onStatus, onError } = {}) {
+  constructor({ onMetrics, onTelemetry, onStatus, onError } = {}) {
     this.worker = null;
     this.task = 'stand';
     this.ready = false;
@@ -67,6 +67,7 @@ export class TrainingClient {
     this.requestId = 0;
     this.pending = new Map();
     this.onMetrics = onMetrics || (() => {});
+    this.onTelemetry = onTelemetry || (() => {});
     this.onStatus = onStatus || (() => {});
     this.onError = onError || (() => {});
   }
@@ -101,6 +102,10 @@ export class TrainingClient {
       this.running = message.running !== false;
       this.onMetrics(message);
       this.onStatus(this.running ? 'running' : 'paused', message);
+      return;
+    }
+    if (type === 'telemetry') {
+      this.onTelemetry(message);
       return;
     }
     if (type === 'ready' || type === 'restored') {

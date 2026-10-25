@@ -23,6 +23,7 @@ let episodeReturn = null;
 let episodeCount = 0;
 let rolloutSteps = 128;
 let lastMetrics = null;
+let lastTelemetryAt = 0;
 const recentReturns = [];
 const recentDistances = [];
 const recentVx = [];
@@ -118,7 +119,7 @@ function mean(values) {
   return values.reduce((sum, value) => sum + value, 0) / values.length;
 }
 
-function metricsMessage(update = null) {
+function metricsMessage(update = null, includeActor = false) {
   const walking = task === 'walk';
   return {
     type: 'metrics',
@@ -141,6 +142,32 @@ function metricsMessage(update = null) {
     distance: walking ? (mean(recentDistances) ?? (env ? env.data.qpos[0] - env.originX : 0)) : null,
     forwardSpeed: walking ? (mean(recentVx) ?? env?.data.qvel[0] ?? 0) : null,
     lateralSpeed: walking ? (mean(recentVy) ?? env?.data.qvel[1] ?? 0) : null,
+    actor: includeActor ? exportActor() : undefined,
+  };
+}
+
+function telemetryMessage(result = null) {
+  const forward = trainer.model.actorForward(observation);
+  const info = result?.info || {};
+  return {
+    type: 'telemetry',
+    task,
+    totalSteps,
+    iteration: trainer.iteration,
+    observation,
+    activations: forward.cache,
+    mean: forward.mean,
+    criticValue: trainer.model.criticForward(observation).value,
+    lastReward: result?.reward ?? null,
+    upright: info.upright ?? env.upright(),
+    height: info.height ?? env.data.qpos[2],
+    contacts: task === 'walk' ? env.footContacts() : [0, 0],
+    forwardSpeed: info.vx ?? (task === 'walk' ? env.data.qvel[0] : 0),
+    lateralSpeed: info.vy ?? (task === 'walk' ? env.data.qvel[1] : 0),
+    distance: info.distance ?? (task === 'walk' ? env.data.qpos[0] - env.originX : 0),
+    episodeSteps: info.steps ?? env.steps,
+    episodeReturn: info.episodeReturn ?? env.episodeReturn,
+    done: Boolean(result?.done),
   };
 }
 
@@ -263,7 +290,8 @@ async function initialize(config) {
     actorChecksum: parameterChecksum(trainer.model.actorParameters()),
     criticChecksum: parameterChecksum(trainer.model.critic.parameters()),
   });
-  post(metricsMessage());
+  lastTelemetryAt = 0;
+  post(metricsMessage(null, true));
 }
 
 function trainingStep() {
@@ -305,8 +333,13 @@ function trainingStep() {
       const lastValue = last.terminated ? 0 : trainer.model.criticForward(result.obs).value;
       const update = trainer.update(transitions, lastValue);
       transitions = [];
-      lastMetrics = metricsMessage(update);
+      lastMetrics = metricsMessage(update, true);
       post(lastMetrics);
+    }
+    const telemetryNow = performance.now();
+    if (telemetryNow - lastTelemetryAt >= 100) {
+      post(telemetryMessage(result));
+      lastTelemetryAt = telemetryNow;
     }
     timer = setTimeout(trainingStep, 0);
   } catch (error) {
