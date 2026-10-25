@@ -120,6 +120,8 @@ button { cursor: pointer; }
 .source-links { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 11px; }
 .source-links a { padding: 7px 9px; border: 1px solid var(--line); border-radius: 7px; color: var(--blue); font-size: 10px; text-decoration: none; }
 .source-links a:hover { background: var(--blue-soft); }
+.assembly-return { display: inline-block; margin-top: 12px; padding-top: 11px; border-top: 1px solid var(--line); color: var(--green); font-size: 10px; text-decoration: none; }
+.assembly-return:hover { text-decoration: underline; }
 .lesson-pagination { display: flex; justify-content: space-between; margin-top: 18px; }
 .lesson-pagination button { padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--ink); font-size: 11px; }
 .lesson-pagination button:disabled { opacity: .35; cursor: default; }

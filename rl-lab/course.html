@@ -170,6 +170,17 @@
   .note.warn b { color: var(--bad); }
   .note.good b { color: var(--good); }
 
+  .hardware-bridge { margin-top: 9px; padding: 9px 10px; border: 1px solid #cfe0d9; border-radius: 9px; background: #f5faf8; }
+  .hardware-bridge-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: #236c5b; font-size: 11.5px; }
+  .hardware-bridge-head a, .part-hardware-link { color: #236c5b; font-weight: 650; text-decoration: none; }
+  .hardware-bridge-head a:hover, .part-hardware-link:hover { text-decoration: underline; }
+  .hardware-bridge > p { margin: 4px 0 7px; font-size: 10.5px; line-height: 1.5; }
+  .hardware-part-buttons { display: flex; gap: 4px; flex-wrap: wrap; }
+  .hardware-part-button { padding: 4px 7px; border-color: #d5e3dd; color: #41685e; font-size: 10px; }
+  .hardware-part-button.active { border-color: #388573; background: #dfeee8; color: #1f6b58; }
+  .part-hardware-link { display: inline-block; margin-top: 6px; }
+  .hardware-part-note { border-color: #bcd8cc; background: #f2f9f6; }
+
   .formula { font-family: var(--mono); font-size: 12px; line-height: 1.7; background: #f8fafc;
     border: 1px solid var(--line); border-radius: 8px; padding: 9px 11px; color: var(--ink-soft); white-space: pre-wrap; }
 
@@ -499,7 +510,7 @@
         <span class="state" id="m1state">0 / 6</span>
       </div>
       <h1>第一关 · 这台鸭子是什么</h1>
-      <p class="sub">Pollen Robotics 开源的 MicroDuck：0.74 公斤、14 个伺服电机、两条腿。<b>拖动可以转着看。</b></p>
+      <p class="sub">先看机械装配，再接着拆电路。官方产品为 15 个电机；本教学模型有 14 路关节动作，鸭嘴单独控制。<b>拖动可以转着看。</b></p>
 
       <div class="split">
         <div class="card">
@@ -512,6 +523,11 @@
           <div class="note" id="partNote">
             拖动旋转 · 滚轮缩放 · <b>点模型上任意一块</b>看它是哪个零件。拆开滑块拉回 0 就合回去。
           </div>
+          <div class="hardware-bridge">
+            <div class="hardware-bridge-head"><b>机械装配 ↔ 电子拆解</b><a href="../hardware.html#system">全部 13 讲 →</a></div>
+            <p>点小零件，或从这里高亮一类部件，再接着看板卡、传感器和数据链。</p>
+            <div class="hardware-part-buttons" id="hardwarePartButtons" role="group" aria-label="选择电子部件"></div>
+          </div>
         </div>
 
         <div class="card">
@@ -523,7 +539,7 @@
           <h4 style="margin-top:12px;">它的家底</h4>
           <div class="specgrid">
             <div class="spec"><b>0.74 kg</b><i>整机重量</i></div>
-            <div class="spec"><b>14 个</b><i>伺服电机</i></div>
+            <div class="spec"><b>15 / 14</b><i>官方电机 / 策略动作</i></div>
             <div class="spec"><b>12 cm</b><i>站着时髋的高度</i></div>
             <div class="spec"><b>50 次/秒</b><i>每秒算 50 次怎么站</i></div>
             <div class="spec"><b>0.96 N·m</b><i>每个舵机最大力矩</i></div>
@@ -1097,6 +1113,8 @@
 </aside>
 
 <script type="module">
+import { ANATOMY_HARDWARE, GEOM_TO_HARDWARE } from '../js/anatomyHardware.js';
+
 /* ════════════════════════════════════════════════════════════
    关卡切换 + 通关记录
    ════════════════════════════════════════════════════════════ */
@@ -2528,6 +2546,50 @@ function applyExplode(k) {
   }
 }
 
+function setHardwareButtonState(id = '') {
+  document.querySelectorAll('.hardware-part-button').forEach((button) => {
+    const active = button.dataset.hardwarePart === id;
+    button.classList.toggle('active', active);
+    button.setAttribute('aria-pressed', String(active));
+  });
+}
+
+function showHardwarePart(id) {
+  if (!A3) return;
+  const part = ANATOMY_HARDWARE.find((item) => item.id === id);
+  if (!part) return;
+  const names = new Set(part.geoms.map((geom) => `geom${geom}`));
+  for (const mesh of A3.meshes) {
+    if (!mesh.material?.emissive) continue;
+    mesh.material.emissive.setHex(names.has(mesh.name) ? 0x5a3a10 : 0x000000);
+    if (names.has(mesh.name)) mesh.material.emissiveIntensity = 1;
+  }
+  A3.sel = id;
+  A3.hardwarePart = id;
+  setHardwareButtonState(id);
+  const note = document.getElementById('partNote');
+  note.className = 'note hardware-part-note';
+  note.innerHTML = `<b>${part.title}</b>：${part.description}<br><a class="part-hardware-link" href="../hardware.html#${part.lesson}">继续拆「${part.title}」→</a>`;
+}
+
+(function buildHardwarePartButtons() {
+  const box = document.getElementById('hardwarePartButtons');
+  for (const part of ANATOMY_HARDWARE) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'hardware-part-button';
+    button.dataset.hardwarePart = part.id;
+    button.textContent = part.short;
+    button.title = `${part.title}：${part.description}`;
+    button.setAttribute('aria-pressed', 'false');
+    button.addEventListener('click', async () => {
+      await initAnatomy3D();
+      showHardwarePart(part.id);
+    });
+    box.appendChild(button);
+  }
+})();
+
 function pickPart(ev) {
   if (!A3) return;
   const THREE = A3.THREE;
@@ -2541,11 +2603,20 @@ function pickPart(ev) {
   if (!hits.length) {
     note.className = 'note';
     note.innerHTML = '拖动旋转 · 滚轮缩放 · <b>点模型上任意一块</b>看它是哪个零件。拆开滑块拉回 0 就合回去。';
+    if (A3) A3.hardwarePart = null;
+    setHardwareButtonState();
     return;
   }
   const mesh = hits[0].object;
+  const hardwareId = GEOM_TO_HARDWARE.get(mesh.name);
+  if (hardwareId) {
+    showHardwarePart(hardwareId);
+    return;
+  }
   const bodyName = mesh.userData.body || '';
   const cn = BODY_CN[bodyName] || bodyName;
+  A3.hardwarePart = null;
+  setHardwareButtonState();
 
   // 高亮：把这一块提亮
   for (const m of A3.meshes) if (m.material) m.material.emissive && m.material.emissive.setHex(0x000000);
